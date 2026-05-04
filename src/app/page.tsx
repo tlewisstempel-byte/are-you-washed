@@ -1,12 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { toPng } from "html-to-image";
-import Card from "@/components/Card";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import type { ScoreResult } from "@/lib/scoring";
 
-type Phase = "idle" | "loading" | "done" | "error";
+type Phase = "idle" | "loading" | "error";
 
 const GROTESK = "var(--font-grotesk, sans-serif)";
 const MONO = "var(--font-mono, monospace)";
@@ -16,16 +15,14 @@ const OFF_WHITE = "#F5F4F0";
 export default function Home() {
   const [handle, setHandle] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
-  const [result, setResult] = useState<ScoreResult | null>(null);
   const [error, setError] = useState("");
-  const cardRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const h = handle.replace(/^@/, "").trim();
     if (!h) return;
     setPhase("loading");
-    setResult(null);
     setError("");
     try {
       const res = await fetch("/api/score", {
@@ -35,31 +32,12 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
-      setResult(data as ScoreResult);
-      setPhase("done");
+      sessionStorage.setItem(`washed:${h.toLowerCase()}`, JSON.stringify(data as ScoreResult));
+      router.push(`/result/${h}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setPhase("error");
     }
-  }
-
-  async function download() {
-    if (!cardRef.current) return;
-    const url = await toPng(cardRef.current, { width: 1200, height: 628, pixelRatio: 2 });
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `washed-${result?.handle ?? "score"}.png`;
-    a.click();
-  }
-
-  function shareOnX() {
-    if (!result) return;
-    const text = `My washed score is ${result.score}/100 — ${result.tierName}.\n\nFind out if you're washed: areyouwashed.xyz`;
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
-      "_blank",
-      "noopener noreferrer"
-    );
   }
 
   return (
@@ -102,6 +80,7 @@ export default function Home() {
             padding: "16px 32px", fontFamily: MONO, fontSize: 11,
             textTransform: "uppercase", letterSpacing: "0.12em",
             background: CARBON, color: OFF_WHITE, flexShrink: 0,
+            border: "none",
             opacity: phase === "loading" || !handle.trim() ? 0.45 : 1,
             cursor: phase === "loading" || !handle.trim() ? "not-allowed" : "pointer",
             transition: "opacity 200ms",
@@ -120,45 +99,6 @@ export default function Home() {
           <p style={{ fontFamily: MONO, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "#FF2D55", margin: 0 }}>
             {error}
           </p>
-        </div>
-      )}
-
-      {/* Result */}
-      {phase === "done" && result && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28, width: "100%" }}>
-
-          {/* Card at 50% scale */}
-          <div style={{ width: 600, height: 314, position: "relative", overflow: "hidden", flexShrink: 0 }}>
-            <div style={{ position: "absolute", top: 0, left: 0, transformOrigin: "top left", transform: "scale(0.5)" }}>
-              <Card ref={cardRef} data={result} />
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div style={{ display: "flex", gap: 12 }}>
-            <button
-              onClick={download}
-              style={{ padding: "13px 28px", fontFamily: MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", background: CARBON, color: OFF_WHITE, cursor: "pointer" }}
-            >
-              Download Card
-            </button>
-            <button
-              onClick={shareOnX}
-              style={{ padding: "13px 28px", fontFamily: MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", background: "transparent", color: CARBON, border: `1px solid ${CARBON}`, cursor: "pointer" }}
-            >
-              Share on X
-            </button>
-          </div>
-
-          {/* Attribution */}
-          <a
-            href="https://different.agency"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontFamily: MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(10,10,10,0.38)", textDecoration: "underline" }}
-          >
-            Want to work with the best? → different.agency
-          </a>
         </div>
       )}
     </main>

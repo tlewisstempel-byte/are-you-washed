@@ -15,7 +15,7 @@ function Bar({ label, value, color }: { label: string; value: number; color: str
       <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono, monospace)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(10,10,10,0.4)" }}>
         <span>{label}</span><span>{value}</span>
       </div>
-      <div style={{ height: 3, background: "rgba(10,10,10,0.1)", borderRadius: 2, overflow: "hidden" }}>
+      <div style={{ height: 2, background: "rgba(10,10,10,0.1)", borderRadius: 2, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${value}%`, background: color, borderRadius: 2 }} />
       </div>
     </div>
@@ -25,7 +25,7 @@ function Bar({ label, value, color }: { label: string; value: number; color: str
 function Avatar({ src, name, size, color }: { src: string; name: string; size: number; color: string }) {
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={name} width={size} height={size} style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />;
+    return <img src={src} alt={name} width={size} height={size} style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `3px solid ${color}` }} />;
   }
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: "var(--font-grotesk, sans-serif)", fontWeight: 700, fontSize: size * 0.35, flexShrink: 0 }}>
@@ -34,7 +34,7 @@ function Avatar({ src, name, size, color }: { src: string; name: string; size: n
   );
 }
 
-function Illustration({ tier, tierName, color }: { tier: number; tierName: string; color: string }) {
+function Illustration({ tier, tierName }: { tier: number; tierName: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -42,7 +42,7 @@ function Illustration({ tier, tierName, color }: { tier: number; tierName: strin
       alt={tierName}
       width={220}
       height={175}
-      style={{ objectFit: "contain", width: 220, height: 175, flexShrink: 0 }}
+      style={{ objectFit: "contain", width: 220, height: 175, flexShrink: 0, borderRadius: 8 }}
       onError={(e) => {
         const img = e.currentTarget;
         if (!img.src.endsWith(".svg")) {
@@ -66,6 +66,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
         display: "flex", flexDirection: "column",
         fontFamily: "var(--font-grotesk, sans-serif)",
         overflow: "hidden",
+        borderRadius: 10,
       }}
     >
       {/* Accent line */}
@@ -89,17 +90,22 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
           {/* Score + illustration */}
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(10,10,10,0.35)" }}>
+              <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(10,10,10,0.20)" }}>
                 Washed Score
               </span>
-              <span style={{ fontWeight: 700, fontSize: 128, lineHeight: 1, color: accentColor, letterSpacing: "-0.02em" }}>
-                {score}
-              </span>
-              <span style={{ fontWeight: 500, fontSize: 28, lineHeight: 1.1, marginTop: 4 }}>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                <span style={{ fontWeight: 700, fontSize: 128, lineHeight: 1, color: accentColor, letterSpacing: "-0.02em" }}>
+                  {score}
+                </span>
+                <span style={{ fontWeight: 400, fontSize: 28, lineHeight: 1, color: accentColor, opacity: 0.18, marginBottom: 16 }}>
+                  /100
+                </span>
+              </div>
+              <span style={{ fontWeight: 500, fontSize: 42, lineHeight: 1.1, marginTop: 4 }}>
                 {tierName}
               </span>
             </div>
-            <Illustration tier={tier} tierName={tierName} color={accentColor} />
+            <Illustration tier={tier} tierName={tierName} />
           </div>
 
           {/* Bars */}
@@ -111,7 +117,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
 
           {/* Footer */}
           <div style={{ marginTop: "auto" }}>
-            <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(10,10,10,0.28)" }}>
+            <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(10,10,10,0.10)" }}>
               areyouwashed.xyz
             </span>
           </div>

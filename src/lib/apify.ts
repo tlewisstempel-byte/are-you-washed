@@ -14,6 +14,8 @@ interface ApifyAuthor {
 }
 
 interface ApifyTweet {
+  id?: string;
+  tweetId?: string;
   likeCount?: number;
   favorite_count?: number;
   replyCount?: number;
@@ -23,6 +25,9 @@ interface ApifyTweet {
   postBookmarks?: number;
   createdAt?: string;
   author?: ApifyAuthor;
+  inReplyToId?: string;
+  inReplyToTweetId?: string;
+  isRetweet?: boolean;
 }
 
 async function startRun(handle: string, token: string): Promise<string> {
@@ -31,9 +36,7 @@ async function startRun(handle: string, token: string): Promise<string> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       startUrls: [
-        // User's own timeline — gives us tweet metrics and profile data
         { url: `https://twitter.com/${handle}` },
-        // Search for tweets replying to this user — gives us commenter authors
         { url: `https://twitter.com/search?q=to%3A${handle}&f=live` },
       ],
       maxTweets: 30,
@@ -89,7 +92,6 @@ export async function scrapeProfile(
 
   const lowerHandle = handle.toLowerCase();
 
-  // Split: user's own tweets vs. reply tweets from other people
   const userTweets = items.filter(
     (item) => item.author?.userName?.toLowerCase() === lowerHandle
   );
@@ -117,11 +119,22 @@ export async function scrapeProfile(
     tweets,
   };
 
-  // Guardian = highest-follower commenter (author of a reply to the user)
+  // Collect the user's own tweet IDs to match against inReplyToId
+  const userTweetIds = new Set(
+    userTweets.map((t) => t.id ?? t.tweetId).filter((id): id is string => Boolean(id))
+  );
+
+  // Guardian = highest-follower person who genuinely replied to user's tweets
   const candidates = new Map<string, Guardian>();
   for (const item of replyTweets) {
     const a = item.author;
     if (!a?.userName) continue;
+
+    const replyTo = item.inReplyToId ?? item.inReplyToTweetId;
+    // If we have inReplyToId, require it to match one of the user's tweets.
+    // If no inReplyToId field, fall back to including non-retweets from the search results.
+    if (replyTo ? !userTweetIds.has(replyTo) : item.isRetweet) continue;
+
     const key = a.userName.toLowerCase();
     if (!candidates.has(key)) {
       candidates.set(key, {
