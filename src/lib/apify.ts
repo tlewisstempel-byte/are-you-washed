@@ -5,6 +5,14 @@ const ACTOR = "apidojo~tweet-scraper";
 const POLL_MS = 3000;
 const MAX_MS = 120_000;
 
+interface ApifyAuthor {
+  userName?: string;
+  name?: string;
+  profilePicture?: string;
+  followers?: number;
+  following?: number;
+}
+
 interface ApifyTweet {
   likeCount?: number;
   favorite_count?: number;
@@ -14,13 +22,10 @@ interface ApifyTweet {
   bookmark_count?: number;
   postBookmarks?: number;
   createdAt?: string;
-  author?: {
-    userName?: string;
-    name?: string;
-    profilePicture?: string;
-    followers?: number;
-    following?: number;
-  };
+  author?: ApifyAuthor;
+  // Present when the user retweeted or quoted someone — these carry a different author
+  retweetedTweet?: { author?: ApifyAuthor };
+  quotedTweet?: { author?: ApifyAuthor };
 }
 
 async function startRun(handle: string, token: string): Promise<string> {
@@ -68,6 +73,23 @@ function books(t: ApifyTweet) { return t.bookmarkCount ?? t.bookmark_count ?? t.
 function likes(t: ApifyTweet) { return t.likeCount ?? t.favorite_count ?? 0; }
 function replies(t: ApifyTweet) { return t.replyCount ?? t.reply_count ?? 0; }
 
+function addCandidate(
+  candidates: Map<string, Guardian>,
+  a: ApifyAuthor | undefined,
+  targetHandle: string
+) {
+  if (!a?.userName) return;
+  const key = a.userName.toLowerCase();
+  if (key === targetHandle.toLowerCase()) return;
+  if (!candidates.has(key)) {
+    candidates.set(key, {
+      handle: a.userName,
+      avatarUrl: a.profilePicture ?? "",
+      followerCount: a.followers ?? 0,
+    });
+  }
+}
+
 export async function scrapeProfile(
   handle: string
 ): Promise<{ profile: UserProfile; guardian: Guardian | null }> {
@@ -99,20 +121,13 @@ export async function scrapeProfile(
     tweets,
   };
 
-  // Guardian = highest-follower non-target author found in the dataset
+  // Guardian = highest-follower author the user interacted with.
+  // item.author is always the target user; other authors appear in
+  // retweetedTweet.author and quotedTweet.author.
   const candidates = new Map<string, Guardian>();
   for (const item of items) {
-    const a = item.author;
-    if (!a?.userName) continue;
-    const key = a.userName.toLowerCase();
-    if (key === handle.toLowerCase()) continue;
-    if (!candidates.has(key)) {
-      candidates.set(key, {
-        handle: a.userName,
-        avatarUrl: a.profilePicture ?? "",
-        followerCount: a.followers ?? 0,
-      });
-    }
+    addCandidate(candidates, item.retweetedTweet?.author, handle);
+    addCandidate(candidates, item.quotedTweet?.author, handle);
   }
 
   const guardian =
