@@ -23,9 +23,6 @@ interface ApifyTweet {
   postBookmarks?: number;
   createdAt?: string;
   author?: ApifyAuthor;
-  // Present when the user retweeted or quoted someone — these carry a different author
-  retweetedTweet?: { author?: ApifyAuthor };
-  quotedTweet?: { author?: ApifyAuthor };
 }
 
 async function startRun(handle: string, token: string): Promise<string> {
@@ -33,8 +30,13 @@ async function startRun(handle: string, token: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      startUrls: [{ url: `https://twitter.com/${handle}` }],
-      maxTweets: 15,
+      startUrls: [
+        // User's own timeline — gives us tweet metrics and profile data
+        { url: `https://twitter.com/${handle}` },
+        // Search for tweets replying to this user — gives us commenter authors
+        { url: `https://twitter.com/search?q=to%3A${handle}&f=live` },
+      ],
+      maxTweets: 30,
       maxRequestRetries: 2,
       proxyConfiguration: {
         useApifyProxy: true,
@@ -63,7 +65,7 @@ async function waitForRun(runId: string, token: string): Promise<void> {
 
 async function getItems(runId: string, token: string): Promise<ApifyTweet[]> {
   const res = await fetch(
-    `${BASE}/actor-runs/${runId}/dataset/items?token=${token}&limit=15`
+    `${BASE}/actor-runs/${runId}/dataset/items?token=${token}&limit=50`
   );
   if (!res.ok) throw new Error(`Dataset fetch failed: ${res.status}`);
   return res.json();
@@ -71,24 +73,7 @@ async function getItems(runId: string, token: string): Promise<ApifyTweet[]> {
 
 function books(t: ApifyTweet) { return t.bookmarkCount ?? t.bookmark_count ?? t.postBookmarks ?? 0; }
 function likes(t: ApifyTweet) { return t.likeCount ?? t.favorite_count ?? 0; }
-function replies(t: ApifyTweet) { return t.replyCount ?? t.reply_count ?? 0; }
-
-function addCandidate(
-  candidates: Map<string, Guardian>,
-  a: ApifyAuthor | undefined,
-  targetHandle: string
-) {
-  if (!a?.userName) return;
-  const key = a.userName.toLowerCase();
-  if (key === targetHandle.toLowerCase()) return;
-  if (!candidates.has(key)) {
-    candidates.set(key, {
-      handle: a.userName,
-      avatarUrl: a.profilePicture ?? "",
-      followerCount: a.followers ?? 0,
-    });
-  }
-}
+function replyCount(t: ApifyTweet) { return t.replyCount ?? t.reply_count ?? 0; }
 
 export async function scrapeProfile(
   handle: string
@@ -102,32 +87,49 @@ export async function scrapeProfile(
 
   if (!items.length) throw new Error(`No data returned for @${handle} — check the handle and try again`);
 
-  const first = items[0];
-  const author = first.author;
+  const lowerHandle = handle.toLowerCase();
 
-  const tweets: Tweet[] = items.slice(0, 10).map((item) => ({
+  // Split: user's own tweets vs. reply tweets from other people
+  const userTweets = items.filter(
+    (item) => item.author?.userName?.toLowerCase() === lowerHandle
+  );
+  const replyTweets = items.filter(
+    (item) => item.author?.userName?.toLowerCase() !== lowerHandle
+  );
+
+  if (!userTweets.length) throw new Error(`Could not find tweets for @${handle}`);
+
+  const profileAuthor = userTweets[0].author;
+
+  const tweets: Tweet[] = userTweets.slice(0, 10).map((item) => ({
     likeCount: likes(item),
-    replyCount: replies(item),
+    replyCount: replyCount(item),
     bookmarkCount: books(item),
     createdAt: item.createdAt ?? new Date().toISOString(),
   }));
 
   const profile: UserProfile = {
     handle,
-    displayName: author?.name ?? handle,
-    avatarUrl: author?.profilePicture ?? "",
-    followerCount: author?.followers ?? 0,
-    followingCount: author?.following ?? 0,
+    displayName: profileAuthor?.name ?? handle,
+    avatarUrl: profileAuthor?.profilePicture ?? "",
+    followerCount: profileAuthor?.followers ?? 0,
+    followingCount: profileAuthor?.following ?? 0,
     tweets,
   };
 
-  // Guardian = highest-follower author the user interacted with.
-  // item.author is always the target user; other authors appear in
-  // retweetedTweet.author and quotedTweet.author.
+  // Guardian = highest-follower commenter (author of a reply to the user)
   const candidates = new Map<string, Guardian>();
-  for (const item of items) {
-    addCandidate(candidates, item.retweetedTweet?.author, handle);
-    addCandidate(candidates, item.quotedTweet?.author, handle);
+  for (const item of replyTweets) {
+    const a = item.author;
+    if (!a?.userName) continue;
+    const key = a.userName.toLowerCase();
+    if (!candidates.has(key)) {
+      candidates.set(key, {
+        handle: a.userName,
+        avatarUrl: a.profilePicture ?? "",
+        followerCount: a.followers ?? 0,
+      });
+    }
   }
 
   const guardian =
