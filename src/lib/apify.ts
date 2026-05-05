@@ -35,11 +35,10 @@ async function startRun(handle: string, token: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      startUrls: [
-        { url: `https://twitter.com/${handle}` },
-        { url: `https://twitter.com/search?q=to%3A${handle}&f=live` },
-      ],
-      maxTweets: 30,
+      twitterHandles: [handle],
+      searchTerms: [`to:${handle}`],
+      maxItems: 30,
+      sort: "Latest",
       maxRequestRetries: 2,
       proxyConfiguration: {
         useApifyProxy: true,
@@ -119,22 +118,11 @@ export async function scrapeProfile(
     tweets,
   };
 
-  // Collect the user's own tweet IDs to match against inReplyToId
-  const userTweetIds = new Set(
-    userTweets.map((t) => t.id ?? t.tweetId).filter((id): id is string => Boolean(id))
-  );
-
-  // Guardian = highest-follower person who genuinely replied to user's tweets
   const candidates = new Map<string, Guardian>();
   for (const item of replyTweets) {
     const a = item.author;
     if (!a?.userName) continue;
-
-    const replyTo = item.inReplyToId ?? item.inReplyToTweetId;
-    // If we have inReplyToId, require it to match one of the user's tweets.
-    // If no inReplyToId field, fall back to including non-retweets from the search results.
-    if (replyTo ? !userTweetIds.has(replyTo) : item.isRetweet) continue;
-
+    if (item.isRetweet) continue;
     const key = a.userName.toLowerCase();
     if (!candidates.has(key)) {
       candidates.set(key, {
