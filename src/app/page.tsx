@@ -27,6 +27,7 @@ export default function Home() {
     if (!h) return;
     setPhase("loading");
     setError("");
+
     try {
       const res = await fetch("/api/score", {
         method: "POST",
@@ -36,8 +37,10 @@ export default function Home() {
           scoreOverride: scoreOverride ? Number(scoreOverride) : undefined,
         }),
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
+
       sessionStorage.setItem(`washed:${h.toLowerCase()}`, JSON.stringify(data as ScoreResult));
       router.push(`/result/${h}`);
     } catch (err) {
@@ -86,7 +89,7 @@ export default function Home() {
             marginTop: 28,
           }}
         >
-          Enter an X handle. Find out whether you're washed or not. 
+          Enter an X handle. Get your score. Share the shame (or the flex).
         </p>
       </div>
 
@@ -110,4 +113,150 @@ export default function Home() {
       >
         <div style={{ position: "relative", flex: 1 }}>
           <span
-            styl
+            style={{
+              position: "absolute",
+              left: 18,
+              top: "50%",
+              transform: "translateY(-50%)",
+              fontFamily: GROTESK,
+              fontSize: 18,
+              color: isFocused ? "rgba(10,10,10,0.5)" : "rgba(10,10,10,0.32)",
+              pointerEvents: "none",
+              userSelect: "none",
+              transition: "color 180ms cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          >
+            @
+          </span>
+
+          <input
+            type="text"
+            placeholder="handle"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            disabled={phase === "loading"}
+            style={{
+              width: "100%",
+              padding: "20px 18px 20px 36px",
+              fontFamily: GROTESK,
+              fontSize: 20,
+              color: CARBON,
+              background: "#FFFFFF",
+              border: `1px solid ${
+                isFocused
+                  ? "rgba(10,10,10,0.24)"
+                  : formInteractive
+                    ? "rgba(10,10,10,0.18)"
+                    : "rgba(10,10,10,0.14)"
+              }`,
+              borderRight: "none",
+              outline: "none",
+              boxSizing: "border-box",
+              transition:
+                "border-color 180ms cubic-bezier(0.16, 1, 0.3, 1), background 180ms cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          style={{
+            padding: "20px 34px",
+            minWidth: 184,
+            fontFamily: MONO,
+            fontSize: 11,
+            textTransform: "uppercase",
+            letterSpacing: "0.14em",
+            background: canSubmit ? (formInteractive ? "#1A1A1A" : CARBON) : "rgba(10,10,10,0.38)",
+            color: OFF_WHITE,
+            flexShrink: 0,
+            border: "none",
+            opacity: canSubmit ? 1 : 0.72,
+            cursor: canSubmit ? "pointer" : "not-allowed",
+            transition:
+              "background 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          {phase === "loading" ? "Scoring..." : "Score me"}
+        </button>
+      </form>
+
+      {/* Dev score override */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginTop: -24,
+          marginBottom: 48,
+          opacity: 0.45,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: MONO,
+            fontSize: 10,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            color: CARBON,
+          }}
+        >
+          Test score:
+        </span>
+
+        <input
+          type="number"
+          min="0"
+          max="100"
+          placeholder="0–100"
+          value={scoreOverride}
+          onChange={(e) => setScoreOverride(e.target.value)}
+          style={{
+            width: 84,
+            padding: "8px 10px",
+            fontFamily: MONO,
+            fontSize: 12,
+            color: CARBON,
+            background: "transparent",
+            border: `1px solid rgba(10,10,10,0.2)`,
+            outline: "none",
+            textAlign: "center",
+          }}
+        />
+      </div>
+
+      {/* Loading */}
+      {phase === "loading" && <LoadingAnimation />}
+
+      {/* Error */}
+      {phase === "error" && (
+        <div
+          style={{
+            padding: "18px 24px",
+            border: "1px solid rgba(255,45,85,0.28)",
+            background: "rgba(255,45,85,0.05)",
+            maxWidth: 560,
+            width: "100%",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: MONO,
+              fontSize: 12,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              color: "#FF2D55",
+              margin: 0,
+            }}
+          >
+            {error}
+          </p>
+        </div>
+      )}
+    </main>
+  );
+}
