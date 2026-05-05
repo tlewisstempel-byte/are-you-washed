@@ -1,19 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { scrapeProfile } from "@/lib/apify";
-import { calculateScore } from "@/lib/scoring";
-
-export const maxDuration = 60;
+import { getTier } from "@/lib/tiers";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { handle } = await req.json();
-    const clean = String(handle ?? "").replace(/^@/, "").trim();
-    if (!clean) return NextResponse.json({ error: "handle is required" }, { status: 400 });
-
-    const { profile, guardian } = await scrapeProfile(clean);
-    return NextResponse.json(calculateScore(profile, guardian));
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Something went wrong";
-    return NextResponse.json({ error: message }, { status: 500 });
+  const { handle } = await req.json();
+  if (!handle) {
+    return NextResponse.json({ error: "Handle is required" }, { status: 400 });
   }
+
+  // MOCK MODE — Apify limit reached. Restore real implementation when reset.
+  const score = 73;
+  const tier = getTier(score);
+
+  return NextResponse.json({
+    handle: handle.replace(/^@/, ""),
+    displayName: handle.replace(/^@/, ""),
+    avatarUrl: `https://unavatar.io/twitter/${handle.replace(/^@/, "")}`,
+    followerCount: 142000,
+    score,
+    tier: tier.tier,
+    tierName: tier.name,
+    accentColor: tier.color,
+    motion: 68,
+    conviction: 81,
+    volume: 74,
+    guardian: null,
+  });
 }
