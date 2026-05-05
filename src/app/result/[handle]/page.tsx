@@ -15,14 +15,32 @@ const OFF_WHITE = "#F5F4F0";
 export default function ResultPage() {
   const params = useParams();
   const router = useRouter();
-  const handle = typeof params.handle === "string" ? params.handle : Array.isArray(params.handle) ? params.handle[0] : "";
+  const handle =
+    typeof params.handle === "string"
+      ? params.handle
+      : Array.isArray(params.handle)
+      ? params.handle[0]
+      : "";
 
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [scale, setScale] = useState(0.75);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const tiltRef = useRef<HTMLDivElement>(null);
+
+  // Responsive scale — card fills ~88% of viewport width, capped by height
+  useEffect(() => {
+    const update = () => {
+      const scaleW = (window.innerWidth * 0.88) / 1200;
+      const scaleH = (window.innerHeight * 0.62) / 628;
+      setScale(Math.min(scaleW, scaleH));
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   useEffect(() => {
     if (!handle) return;
@@ -32,11 +50,8 @@ export default function ResultPage() {
         setResult(JSON.parse(cached));
         setLoading(false);
         return;
-      } catch {
-        // fall through to re-fetch
-      }
+      } catch { /* fall through */ }
     }
-    // Re-fetch if no cached result
     fetch("/api/score", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -57,13 +72,21 @@ export default function ResultPage() {
     const rect = el.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    el.style.transform = `perspective(1200px) rotateY(${x * 12}deg) rotateX(${-y * 8}deg) scale(1.02)`;
+    const MAX_TILT = 10;
+    const rotateY = x * MAX_TILT * 2;
+    const rotateX = -y * MAX_TILT * 2;
+    el.style.transition = "";
+    el.style.transform = `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+    el.style.boxShadow = `${-rotateY * 3}px ${rotateX * 3 + 40}px 100px rgba(0,0,0,0.9), ${-rotateY}px ${rotateX + 12}px 30px rgba(0,0,0,0.6)`;
   }, []);
 
   const onMouseLeave = useCallback(() => {
     const el = tiltRef.current;
     if (!el) return;
-    el.style.transform = "perspective(1200px) rotateY(0deg) rotateX(0deg) scale(1)";
+    el.style.transition = "transform 0.6s ease, box-shadow 0.6s ease";
+    el.style.transform = "perspective(1800px) rotateX(0deg) rotateY(0deg) scale(1)";
+    el.style.boxShadow = "0 40px 100px rgba(0,0,0,0.8), 0 8px 30px rgba(0,0,0,0.5)";
+    setTimeout(() => { if (el) el.style.transition = ""; }, 600);
   }, []);
 
   async function download() {
@@ -85,23 +108,53 @@ export default function ResultPage() {
     );
   }
 
-  return (
-    <main style={{ minHeight: "100vh", background: OFF_WHITE, display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 24px 60px" }}>
+  const cardW = Math.round(1200 * scale);
+  const cardH = Math.round(628 * scale);
 
-      {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 52 }}>
-        <h1
-          onClick={() => router.push("/")}
-          style={{ fontFamily: GROTESK, fontWeight: 700, fontSize: "clamp(32px, 6vw, 64px)", letterSpacing: "-0.03em", color: CARBON, lineHeight: 1, margin: 0, cursor: "pointer" }}
-        >
-          Are You Washed?
-        </h1>
-      </div>
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background: CARBON,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "48px 24px 64px",
+        gap: 48,
+      }}
+    >
+      {/* Faded header — doubles as back button */}
+      <h1
+        onClick={() => router.push("/")}
+        style={{
+          fontFamily: GROTESK,
+          fontWeight: 700,
+          fontSize: "clamp(20px, 2.5vw, 36px)",
+          letterSpacing: "-0.03em",
+          color: OFF_WHITE,
+          opacity: 0.12,
+          lineHeight: 1,
+          margin: 0,
+          cursor: "pointer",
+        }}
+      >
+        Are You Washed?
+      </h1>
 
       {loading && <LoadingAnimation />}
 
       {error && (
-        <div style={{ padding: "18px 24px", border: "1px solid rgba(255,45,85,0.28)", background: "rgba(255,45,85,0.05)", maxWidth: 560, width: "100%", textAlign: "center" }}>
+        <div
+          style={{
+            padding: "18px 24px",
+            border: "1px solid rgba(255,45,85,0.4)",
+            background: "rgba(255,45,85,0.08)",
+            maxWidth: 560,
+            width: "100%",
+            textAlign: "center",
+          }}
+        >
           <p style={{ fontFamily: MONO, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "#FF2D55", margin: 0 }}>
             {error}
           </p>
@@ -109,62 +162,94 @@ export default function ResultPage() {
       )}
 
       {!loading && result && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28, width: "100%" }}>
-
-          {/* Tilt wrapper at 50% scale */}
+        <>
+          {/* Card */}
           <div
             ref={tiltRef}
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
             style={{
-              width: 600, height: 314,
+              width: cardW,
+              height: cardH,
               position: "relative",
-              overflow: "hidden",
               flexShrink: 0,
               transformStyle: "preserve-3d",
-              transition: "transform 120ms ease-out",
-              borderRadius: 5,
+              borderRadius: Math.round(10 * scale),
+              boxShadow: "0 40px 100px rgba(0,0,0,0.8), 0 8px 30px rgba(0,0,0,0.5)",
+              cursor: "default",
             }}
           >
-            <div style={{ position: "absolute", top: 0, left: 0, transformOrigin: "top left", transform: "scale(0.5)" }}>
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                transformOrigin: "top left",
+                transform: `scale(${scale})`,
+                borderRadius: 10,
+                overflow: "hidden",
+              }}
+            >
               <Card ref={cardRef} data={result} />
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Buttons */}
           <div style={{ display: "flex", gap: 12 }}>
             <button
               onClick={download}
-              style={{ padding: "13px 28px", fontFamily: MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", background: CARBON, color: OFF_WHITE, cursor: "pointer", border: "none" }}
+              style={{
+                padding: "14px 32px",
+                fontFamily: MONO,
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                background: OFF_WHITE,
+                color: CARBON,
+                cursor: "pointer",
+                border: "none",
+              }}
             >
               Download Card
             </button>
             <button
               onClick={shareOnX}
-              style={{ padding: "13px 28px", fontFamily: MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", background: "transparent", color: CARBON, border: `1px solid ${CARBON}`, cursor: "pointer" }}
+              style={{
+                padding: "14px 32px",
+                fontFamily: MONO,
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                background: "transparent",
+                color: OFF_WHITE,
+                border: `1px solid rgba(245,244,240,0.3)`,
+                cursor: "pointer",
+              }}
             >
               Share on X
             </button>
           </div>
 
-          {/* Try another */}
+          {/* Score another */}
           <button
             onClick={() => router.push("/")}
-            style={{ fontFamily: MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(10,10,10,0.38)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+            style={{
+              fontFamily: MONO,
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              color: "rgba(245,244,240,0.3)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+              marginTop: -24,
+            }}
           >
-            Score another handle
+            Score Another Handle
           </button>
-
-          {/* Attribution */}
-          <a
-            href="https://different.agency"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontFamily: MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(10,10,10,0.38)", textDecoration: "underline" }}
-          >
-            Want to work with the best? → different.agency
-          </a>
-        </div>
+        </>
       )}
     </main>
   );
