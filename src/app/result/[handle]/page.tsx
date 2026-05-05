@@ -101,6 +101,7 @@ export default function ResultPage() {
 
   async function download() {
     if (!cardRef.current) return;
+
     const url = await toPng(cardRef.current, {
       width: 1200,
       height: 628,
@@ -148,7 +149,7 @@ export default function ResultPage() {
           fontWeight: 700,
           fontSize: "clamp(20px, 2.5vw, 36px)",
           letterSpacing: "-0.03em",
-          color: "#FFFFFF",
+          color: OFF_WHITE,
           opacity: 0.96,
           lineHeight: 1,
           margin: 0,
