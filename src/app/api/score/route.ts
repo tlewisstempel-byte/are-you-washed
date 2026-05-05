@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTierForScore } from "@/lib/tiers";
 
 export async function POST(req: NextRequest) {
-  const { handle } = await req.json();
+  const { handle, scoreOverride } = await req.json();
   if (!handle) {
     return NextResponse.json({ error: "Handle is required" }, { status: 400 });
   }
 
-  const score = 20;
+  const score = typeof scoreOverride === "number" ? Math.max(0, Math.min(100, scoreOverride)) : 20;
   const tier = getTierForScore(score);
 
   return NextResponse.json({

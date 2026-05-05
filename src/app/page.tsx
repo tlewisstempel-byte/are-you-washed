@@ -16,6 +16,7 @@ export default function Home() {
   const [handle, setHandle] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState("");
+  const [scoreOverride, setScoreOverride] = useState("");
   const router = useRouter();
 
   async function submit(e: React.FormEvent) {
@@ -28,7 +29,7 @@ export default function Home() {
       const res = await fetch("/api/score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handle: h }),
+        body: JSON.stringify({ handle: h, scoreOverride: scoreOverride ? Number(scoreOverride) : undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
@@ -89,6 +90,27 @@ export default function Home() {
           Score me
         </button>
       </form>
+
+      {/* Dev score override */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: -40, marginBottom: 40, opacity: 0.45 }}>
+        <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: CARBON }}>
+          Test score:
+        </span>
+        <input
+          type="number"
+          min="0"
+          max="100"
+          placeholder="0–100"
+          value={scoreOverride}
+          onChange={(e) => setScoreOverride(e.target.value)}
+          style={{
+            width: 72, padding: "6px 10px",
+            fontFamily: MONO, fontSize: 12, color: CARBON,
+            background: "transparent", border: `1px solid rgba(10,10,10,0.2)`,
+            outline: "none", textAlign: "center",
+          }}
+        />
+      </div>
 
       {/* Loading */}
       {phase === "loading" && <LoadingAnimation />}
