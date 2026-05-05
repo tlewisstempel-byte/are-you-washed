@@ -30,13 +30,13 @@ export default function ResultPage() {
   const cardRef = useRef<HTMLDivElement>(null);
   const tiltRef = useRef<HTMLDivElement>(null);
 
-  // Responsive scale — card fills ~88% of viewport width, capped by height
   useEffect(() => {
     const update = () => {
       const scaleW = (window.innerWidth * 0.88) / 1200;
       const scaleH = (window.innerHeight * 0.62) / 628;
       setScale(Math.min(scaleW, scaleH));
     };
+
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
@@ -44,14 +44,18 @@ export default function ResultPage() {
 
   useEffect(() => {
     if (!handle) return;
+
     const cached = sessionStorage.getItem(`washed:${handle.toLowerCase()}`);
     if (cached) {
       try {
         setResult(JSON.parse(cached));
         setLoading(false);
         return;
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
+
     fetch("/api/score", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -69,12 +73,14 @@ export default function ResultPage() {
   const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = tiltRef.current;
     if (!el) return;
+
     const rect = el.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
     const MAX_TILT = 10;
     const rotateY = x * MAX_TILT * 2;
     const rotateX = -y * MAX_TILT * 2;
+
     el.style.transition = "";
     el.style.transform = `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
     el.style.boxShadow = `${-rotateY * 3}px ${rotateX * 3 + 40}px 100px rgba(0,0,0,0.9), ${-rotateY}px ${rotateX + 12}px 30px rgba(0,0,0,0.6)`;
@@ -83,15 +89,24 @@ export default function ResultPage() {
   const onMouseLeave = useCallback(() => {
     const el = tiltRef.current;
     if (!el) return;
+
     el.style.transition = "transform 0.6s ease, box-shadow 0.6s ease";
     el.style.transform = "perspective(1800px) rotateX(0deg) rotateY(0deg) scale(1)";
     el.style.boxShadow = "0 40px 100px rgba(0,0,0,0.8), 0 8px 30px rgba(0,0,0,0.5)";
-    setTimeout(() => { if (el) el.style.transition = ""; }, 600);
+
+    setTimeout(() => {
+      if (el) el.style.transition = "";
+    }, 600);
   }, []);
 
   async function download() {
     if (!cardRef.current) return;
-    const url = await toPng(cardRef.current, { width: 1200, height: 628, pixelRatio: 2 });
+    const url = await toPng(cardRef.current, {
+      width: 1200,
+      height: 628,
+      pixelRatio: 2,
+    });
+
     const a = document.createElement("a");
     a.href = url;
     a.download = `washed-${result?.handle ?? "score"}.png`;
@@ -100,7 +115,9 @@ export default function ResultPage() {
 
   function shareOnX() {
     if (!result) return;
+
     const text = `My washed score is ${result.score}/100 — ${result.tierName}.\n\nFind out if you're washed: areyouwashed.xyz`;
+
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
       "_blank",
@@ -124,7 +141,6 @@ export default function ResultPage() {
         gap: 48,
       }}
     >
-      {/* Faded header — doubles as back button */}
       <h1
         onClick={() => router.push("/")}
         style={{
@@ -132,8 +148,8 @@ export default function ResultPage() {
           fontWeight: 700,
           fontSize: "clamp(20px, 2.5vw, 36px)",
           letterSpacing: "-0.03em",
-          color: "#1A3EFF",
-          opacity: 0.9,
+          color: "#FFFFFF",
+          opacity: 0.96,
           lineHeight: 1,
           margin: 0,
           cursor: "pointer",
@@ -155,7 +171,16 @@ export default function ResultPage() {
             textAlign: "center",
           }}
         >
-          <p style={{ fontFamily: MONO, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "#FF2D55", margin: 0 }}>
+          <p
+            style={{
+              fontFamily: MONO,
+              fontSize: 12,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              color: "#FF2D55",
+              margin: 0,
+            }}
+          >
             {error}
           </p>
         </div>
@@ -163,7 +188,6 @@ export default function ResultPage() {
 
       {!loading && result && (
         <>
-          {/* Card */}
           <div
             ref={tiltRef}
             onMouseMove={onMouseMove}
@@ -194,7 +218,6 @@ export default function ResultPage() {
             </div>
           </div>
 
-          {/* Buttons */}
           <div style={{ display: "flex", gap: 12 }}>
             <button
               onClick={download}
@@ -212,6 +235,7 @@ export default function ResultPage() {
             >
               Download Card
             </button>
+
             <button
               onClick={shareOnX}
               style={{
@@ -230,7 +254,6 @@ export default function ResultPage() {
             </button>
           </div>
 
-          {/* Score another */}
           <button
             onClick={() => router.push("/")}
             style={{
