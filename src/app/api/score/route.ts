@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTier } from "@/lib/tiers";
+import { getTierForScore } from "@/lib/tiers";
 
 export async function POST(req: NextRequest) {
   const { handle } = await req.json();
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   }
 
   const score = 20;
-  const tier = getTier(score);
+  const tier = getTierForScore(score);
 
   return NextResponse.json({
     handle: handle.replace(/^@/, ""),
@@ -16,9 +16,9 @@ export async function POST(req: NextRequest) {
     avatarUrl: `https://unavatar.io/twitter/${handle.replace(/^@/, "")}`,
     followerCount: 142000,
     score,
-    tier: tier.tier,
+    tier: tier.number,
     tierName: tier.name,
-    accentColor: tier.color,
+    accentColor: tier.accentColor,
     motion: 12,
     conviction: 18,
     volume: 45,
