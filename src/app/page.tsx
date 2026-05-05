@@ -86,7 +86,7 @@ export default function Home() {
             marginTop: 28,
           }}
         >
-          Enter an X handle. Get your score. Share the shame (or the flex).
+          Enter an X handle. Find out whether you're washed or not. 
         </p>
       </div>
 
