@@ -42,7 +42,14 @@ function Illustration({ tier, tierName }: { tier: number; tierName: string }) {
       alt={tierName}
       width={220}
       height={175}
-      style={{ objectFit: "contain", width: 220, height: 175, flexShrink: 0, borderRadius: 8 }}
+      style={{
+        objectFit: "contain",
+        width: 220,
+        height: 175,
+        flexShrink: 0,
+        borderRadius: 8,
+        mixBlendMode: "multiply",
+      }}
       onError={(e) => {
         const img = e.currentTarget;
         if (!img.src.endsWith(".svg")) {
