@@ -17,6 +17,8 @@ export default function Home() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState("");
   const [scoreOverride, setScoreOverride] = useState("");
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const router = useRouter();
 
   async function submit(e: React.FormEvent) {
@@ -29,7 +31,10 @@ export default function Home() {
       const res = await fetch("/api/score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handle: h, scoreOverride: scoreOverride ? Number(scoreOverride) : undefined }),
+        body: JSON.stringify({
+          handle: h,
+          scoreOverride: scoreOverride ? Number(scoreOverride) : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
@@ -41,88 +46,68 @@ export default function Home() {
     }
   }
 
-  return (
-    <main style={{ minHeight: "100vh", background: OFF_WHITE, display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 24px 60px" }}>
+  const formInteractive = isHovered || isFocused;
+  const canSubmit = phase !== "loading" && !!handle.trim();
 
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background: OFF_WHITE,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "104px 24px 72px",
+      }}
+    >
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 52 }}>
-        <h1 style={{ fontFamily: GROTESK, fontWeight: 700, fontSize: "clamp(48px, 9vw, 96px)", letterSpacing: "-0.03em", color: CARBON, lineHeight: 1, margin: 0 }}>
+      <div style={{ textAlign: "center", marginBottom: 72 }}>
+        <h1
+          style={{
+            fontFamily: GROTESK,
+            fontWeight: 700,
+            fontSize: "clamp(56px, 10vw, 108px)",
+            letterSpacing: "-0.04em",
+            color: CARBON,
+            lineHeight: 0.96,
+            margin: 0,
+          }}
+        >
           Are You Washed?
         </h1>
-        <p style={{ fontFamily: MONO, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(10,10,10,0.42)", marginTop: 20 }}>
+
+        <p
+          style={{
+            fontFamily: MONO,
+            fontSize: 12,
+            textTransform: "uppercase",
+            letterSpacing: "0.12em",
+            color: "rgba(10,10,10,0.42)",
+            marginTop: 28,
+          }}
+        >
           Enter an X handle. Get your score. Share the shame (or the flex).
         </p>
       </div>
 
       {/* Input */}
-      <form onSubmit={submit} style={{ display: "flex", width: "100%", maxWidth: 560, marginBottom: 60 }}>
+      <form
+        onSubmit={submit}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{
+          display: "flex",
+          width: "100%",
+          maxWidth: 640,
+          marginBottom: 76,
+          transform: formInteractive ? "translateY(-2px) scale(1.012)" : "translateY(0) scale(1)",
+          boxShadow: formInteractive
+            ? "0 14px 32px rgba(10,10,10,0.08)"
+            : "0 0 0 rgba(10,10,10,0)",
+          transition:
+            "transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+      >
         <div style={{ position: "relative", flex: 1 }}>
-          <span style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", fontFamily: GROTESK, fontSize: 18, color: "rgba(10,10,10,0.32)", pointerEvents: "none", userSelect: "none" }}>
-            @
-          </span>
-          <input
-            type="text"
-            placeholder="handle"
-            value={handle}
-            onChange={(e) => setHandle(e.target.value)}
-            disabled={phase === "loading"}
-            style={{
-              width: "100%", padding: "16px 16px 16px 36px",
-              fontFamily: GROTESK, fontSize: 18, color: CARBON,
-              background: "#fff", border: `1px solid rgba(10,10,10,0.18)`,
-              borderRight: "none", outline: "none", boxSizing: "border-box",
-            }}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={phase === "loading" || !handle.trim()}
-          style={{
-            padding: "16px 32px", fontFamily: MONO, fontSize: 11,
-            textTransform: "uppercase", letterSpacing: "0.12em",
-            background: CARBON, color: OFF_WHITE, flexShrink: 0,
-            border: "none",
-            opacity: phase === "loading" || !handle.trim() ? 0.45 : 1,
-            cursor: phase === "loading" || !handle.trim() ? "not-allowed" : "pointer",
-            transition: "opacity 200ms",
-          }}
-        >
-          Score me
-        </button>
-      </form>
-
-      {/* Dev score override */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: -40, marginBottom: 40, opacity: 0.45 }}>
-        <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: CARBON }}>
-          Test score:
-        </span>
-        <input
-          type="number"
-          min="0"
-          max="100"
-          placeholder="0–100"
-          value={scoreOverride}
-          onChange={(e) => setScoreOverride(e.target.value)}
-          style={{
-            width: 72, padding: "6px 10px",
-            fontFamily: MONO, fontSize: 12, color: CARBON,
-            background: "transparent", border: `1px solid rgba(10,10,10,0.2)`,
-            outline: "none", textAlign: "center",
-          }}
-        />
-      </div>
-
-      {/* Loading */}
-      {phase === "loading" && <LoadingAnimation />}
-
-      {/* Error */}
-      {phase === "error" && (
-        <div style={{ padding: "18px 24px", border: "1px solid rgba(255,45,85,0.28)", background: "rgba(255,45,85,0.05)", maxWidth: 560, width: "100%", textAlign: "center" }}>
-          <p style={{ fontFamily: MONO, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "#FF2D55", margin: 0 }}>
-            {error}
-          </p>
-        </div>
-      )}
-    </main>
-  );
-}
+          <span
+            styl
