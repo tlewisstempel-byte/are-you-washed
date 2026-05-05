@@ -7,15 +7,24 @@ const MAX_MS = 120_000;
 
 interface ApifyAuthor {
   userName?: string;
+  username?: string;
+  screen_name?: string;
   name?: string;
   profilePicture?: string;
+  profile_image_url?: string;
   followers?: number;
+  followers_count?: number;
   following?: number;
+  friends_count?: number;
 }
 
-interface ApifyTweet {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ApifyItem = Record<string, any>;
+
+interface ApifyTweet extends ApifyItem {
   id?: string;
   tweetId?: string;
+  tweet_id?: string;
   likeCount?: number;
   favorite_count?: number;
   replyCount?: number;
@@ -24,10 +33,14 @@ interface ApifyTweet {
   bookmark_count?: number;
   postBookmarks?: number;
   createdAt?: string;
+  created_at?: string;
   author?: ApifyAuthor;
+  user?: ApifyAuthor;
   inReplyToId?: string;
   inReplyToTweetId?: string;
+  in_reply_to_status_id_str?: string;
   isRetweet?: boolean;
+  retweeted?: boolean;
 }
 
 async function startRun(handle: string, token: string): Promise<string> {
@@ -77,6 +90,15 @@ function books(t: ApifyTweet) { return t.bookmarkCount ?? t.bookmark_count ?? t.
 function likes(t: ApifyTweet) { return t.likeCount ?? t.favorite_count ?? 0; }
 function replyCount(t: ApifyTweet) { return t.replyCount ?? t.reply_count ?? 0; }
 
+function authorHandle(t: ApifyTweet): string {
+  const a = t.author ?? t.user;
+  return (a?.userName ?? a?.username ?? a?.screen_name ?? "").toLowerCase();
+}
+
+function authorOf(t: ApifyTweet): ApifyAuthor | undefined {
+  return t.author ?? t.user;
+}
+
 export async function scrapeProfile(
   handle: string
 ): Promise<{ profile: UserProfile; guardian: Guardian | null }> {
@@ -89,46 +111,57 @@ export async function scrapeProfile(
 
   if (!items.length) throw new Error(`No data returned for @${handle} — check the handle and try again`);
 
+  console.log(`[apify] ${items.length} items returned for @${handle}`);
+  console.log(`[apify] first item keys: ${Object.keys(items[0] ?? {}).join(", ")}`);
+  console.log(`[apify] first item author/user:`, JSON.stringify(items[0]?.author ?? items[0]?.user ?? null));
+
   const lowerHandle = handle.toLowerCase();
 
-  const userTweets = items.filter(
-    (item) => item.author?.userName?.toLowerCase() === lowerHandle
-  );
-  const replyTweets = items.filter(
-    (item) => item.author?.userName?.toLowerCase() !== lowerHandle
-  );
+  const userTweets = items.filter((item) => authorHandle(item) === lowerHandle);
+  const replyTweets = items.filter((item) => authorHandle(item) !== lowerHandle);
 
-  if (!userTweets.length) throw new Error(`Could not find tweets for @${handle}`);
+  if (!userTweets.length) {
+    const sample = items.slice(0, 3).map((it) => ({
+      keys: Object.keys(it),
+      author: it.author ?? it.user ?? null,
+      authorHandle: authorHandle(it),
+    }));
+    console.log(`[apify] NO USER TWEETS FOUND. sample:`, JSON.stringify(sample));
+    throw new Error(
+      `Could not find tweets for @${handle} — ${items.length} items returned but none matched. ` +
+      `First item author: ${JSON.stringify(items[0]?.author ?? items[0]?.user ?? items[0]?.authorName ?? "none")}`
+    );
+  }
 
-  const profileAuthor = userTweets[0].author;
+  const profileAuthor = authorOf(userTweets[0]);
 
   const tweets: Tweet[] = userTweets.slice(0, 10).map((item) => ({
     likeCount: likes(item),
     replyCount: replyCount(item),
     bookmarkCount: books(item),
-    createdAt: item.createdAt ?? new Date().toISOString(),
+    createdAt: item.createdAt ?? item.created_at ?? new Date().toISOString(),
   }));
 
   const profile: UserProfile = {
     handle,
     displayName: profileAuthor?.name ?? handle,
-    avatarUrl: profileAuthor?.profilePicture ?? "",
-    followerCount: profileAuthor?.followers ?? 0,
-    followingCount: profileAuthor?.following ?? 0,
+    avatarUrl: profileAuthor?.profilePicture ?? profileAuthor?.profile_image_url ?? "",
+    followerCount: profileAuthor?.followers ?? profileAuthor?.followers_count ?? 0,
+    followingCount: profileAuthor?.following ?? profileAuthor?.friends_count ?? 0,
     tweets,
   };
 
   const candidates = new Map<string, Guardian>();
   for (const item of replyTweets) {
-    const a = item.author;
-    if (!a?.userName) continue;
-    if (item.isRetweet) continue;
-    const key = a.userName.toLowerCase();
-    if (!candidates.has(key)) {
-      candidates.set(key, {
-        handle: a.userName,
-        avatarUrl: a.profilePicture ?? "",
-        followerCount: a.followers ?? 0,
+    const a = authorOf(item);
+    const h = authorHandle(item);
+    if (!h || !a) continue;
+    if (item.isRetweet || item.retweeted) continue;
+    if (!candidates.has(h)) {
+      candidates.set(h, {
+        handle: a.userName ?? a.username ?? a.screen_name ?? h,
+        avatarUrl: a.profilePicture ?? a.profile_image_url ?? "",
+        followerCount: a.followers ?? a.followers_count ?? 0,
       });
     }
   }
