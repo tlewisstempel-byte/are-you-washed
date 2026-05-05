@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Handle is required" }, { status: 400 });
   }
 
-  // MOCK MODE — Apify limit reached. Restore real implementation when reset.
+  // MOCK MODE — Apify monthly limit reached. Replace with real implementation when reset.
   const score = 73;
   const tier = getTier(score);
 
