@@ -87,12 +87,12 @@ function Illustration({ tier, tierName }: { tier: number; tierName: string }) {
     <img
       src={`/illustrations/tier${tier}.png`}
       alt={tierName}
-      width={280}
-      height={223}
+      width={320}
+      height={255}
       style={{
         objectFit: "contain",
-        width: 280,
-        height: 223,
+        width: 320,
+        height: 255,
         flexShrink: 0,
         borderRadius: 8,
         mixBlendMode: "multiply",
@@ -214,7 +214,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               </span>
             </div>
 
-            <div style={{ marginRight: 24, transform: "translateY(-24px)" }}>
+            <div style={{ marginRight: 16, transform: "translateY(-36px)" }}>
               <Illustration tier={tier} tierName={tierName} />
             </div>
           </div>
