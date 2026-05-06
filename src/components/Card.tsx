@@ -152,9 +152,18 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
         >
           {/* Profile */}
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <Avatar src={avatarUrl} name={handle} size={76} color={accentColor} />
+            <Avatar src={avatarUrl} name={handle} size={120} color={accentColor} />
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontWeight: 500, fontSize: 26, lineHeight: 1.1 }}>@{handle}</span>
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 28,
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                @{handle}
+              </span>
               <span
                 style={{
                   fontFamily: "var(--font-mono, monospace)",
@@ -292,7 +301,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
                   marginTop: "auto",
                 }}
               >
-                Your most famous recent supporter. Keeping you unwashed — or trying to.
+                Your most famous recent supporter. Keeping you unwashed - or trying to.
               </p>
             </>
           ) : (
