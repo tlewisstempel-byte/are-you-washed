@@ -65,6 +65,41 @@ function getStr(obj: ApifyItem, ...keys: string[]): string {
   return "";
 }
 
+async function fetchReplies(handle: string, token: string): Promise<ApifyItem[]> {
+  const res = await fetch(`${BASE}/acts/${ACTOR}/runs?token=${token}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      searchTerms: [`to:${handle}`],
+      maxItems: 20,
+      maxRequestRetries: 2,
+      proxyConfiguration: {
+        useApifyProxy: true,
+        apifyProxyGroups: ["DATACENTER"],
+      },
+    }),
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  const runId = data.data.id as string;
+
+  const deadline = Date.now() + MAX_MS;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, POLL_MS));
+    const statusRes = await fetch(`${BASE}/actor-runs/${runId}?token=${token}`);
+    if (!statusRes.ok) continue;
+    const { data: runData } = await statusRes.json();
+    if (runData.status === "SUCCEEDED") break;
+    if (["FAILED", "ABORTED", "TIMED-OUT"].includes(runData.status)) return [];
+  }
+
+  const itemsRes = await fetch(
+    `${BASE}/actor-runs/${runId}/dataset/items?token=${token}&limit=30`
+  );
+  if (!itemsRes.ok) return [];
+  return itemsRes.json();
+}
+
 export async function scrapeProfile(
   handle: string
 ): Promise<{ profile: UserProfile; guardian: Guardian | null }> {
@@ -124,7 +159,43 @@ export async function scrapeProfile(
     tweets,
   };
 
-  const guardian: Guardian | null = null;
+  // Fetch replies for guardian — runs after profile is built, failure is non-fatal
+  let guardian: Guardian | null = null;
+  try {
+    const replyItems = await fetchReplies(handle, token);
+
+    if (replyItems.length > 0) {
+      console.log(`[apify] reply item keys:`, Object.keys(replyItems[0]).join(", "));
+      console.log(`[apify] reply item sample:`, JSON.stringify(replyItems[0]).slice(0, 400));
+    }
+
+    const candidates = new Map<string, Guardian>();
+    for (const item of replyItems) {
+      const replyAuthor = item?.author ?? item?.user ?? item?.userData ?? {};
+      const h =
+        getStr(replyAuthor, "userName", "username", "screen_name") ||
+        getStr(item, "authorHandle", "authorUserName", "userName");
+      if (!h || h.toLowerCase() === handle.toLowerCase()) continue;
+      if (item.isRetweet || item.retweeted) continue;
+      if (!candidates.has(h.toLowerCase())) {
+        candidates.set(h.toLowerCase(), {
+          handle: h,
+          avatarUrl:
+            getStr(replyAuthor, "profilePicture", "profile_image_url", "avatar") ||
+            getStr(item, "authorProfilePicture", "profilePicture"),
+          followerCount:
+            getNum(replyAuthor, "followers", "followers_count", "followersCount") ||
+            getNum(item, "authorFollowers", "followersCount"),
+        });
+      }
+    }
+
+    if (candidates.size > 0) {
+      guardian = [...candidates.values()].sort((a, b) => b.followerCount - a.followerCount)[0];
+    }
+  } catch {
+    guardian = null;
+  }
 
   return { profile, guardian };
 }
