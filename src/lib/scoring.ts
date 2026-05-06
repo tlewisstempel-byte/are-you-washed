@@ -43,7 +43,7 @@ function calcMotion(tweets: Tweet[], followerCount: number): number {
     0
   );
   const rawRate = totalWeighted / Math.max(followerCount, 1);
-  return Math.round(Math.min(rawRate / 0.1, 1) * 100);
+  return Math.round(Math.min(rawRate / 0.2, 1) * 100);
 }
 
 function calcConviction(followerCount: number, followingCount: number): number {
@@ -82,7 +82,7 @@ export function calculateScore(
   const volume = calcVolume(profile.tweets);
   const score = Math.max(
     0,
-    Math.min(100, Math.round(motion * 0.5 + conviction * 0.3 + volume * 0.2))
+    Math.min(100, Math.round(motion * 0.4 + conviction * 0.4 + volume * 0.2))
   );
   const tier = getTierForScore(score);
   return {
