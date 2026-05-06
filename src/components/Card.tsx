@@ -91,7 +91,7 @@ function Illustration({ tier, tierName }: { tier: number; tierName: string }) {
         height: 320,
         width: "auto",
         position: "absolute",
-        bottom: 40,
+        top: 120,
         right: 60,
         mixBlendMode: "multiply",
       }}
@@ -221,14 +221,14 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
             </span>
           </div>
 
-          {/* Illustration — absolutely positioned in left column */}
+          {/* Illustration — absolutely positioned, upper-right of left column */}
           <Illustration tier={tier} tierName={tierName} />
 
           {/* Bars */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Bar label="Motion" value={motion} color={accentColor} />
-            <Bar label="Conviction" value={conviction} color={accentColor} />
-            <Bar label="Volume" value={volume} color={accentColor} />
+            <Bar label="Engagement" value={motion} color={accentColor} />
+            <Bar label="Credibility" value={conviction} color={accentColor} />
+            <Bar label="Consistency" value={volume} color={accentColor} />
           </div>
 
           {/* Footer */}
@@ -258,7 +258,8 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
             padding: "44px 40px",
             display: "flex",
             flexDirection: "column",
-            gap: 20,
+            alignItems: "center",
+            justifyContent: "center",
             flexShrink: 0,
           }}
         >
@@ -269,6 +270,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               textTransform: "uppercase",
               letterSpacing: "0.12em",
               color: "rgba(10,10,10,0.35)",
+              marginBottom: 24,
             }}
           >
             Your Guardian
@@ -276,29 +278,41 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
 
           {guardian ? (
             <>
-              <Avatar src={guardian.avatarUrl} name={guardian.handle} size={96} color="#0A0A0A" />
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontWeight: 500, fontSize: 22 }}>@{guardian.handle}</span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 11,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    color: "rgba(10,10,10,0.4)",
-                  }}
-                >
-                  {fmt(guardian.followerCount)} followers
-                </span>
+              <div style={{ marginBottom: 20 }}>
+                <Avatar src={guardian.avatarUrl} name={guardian.handle} size={140} color="#0A0A0A" />
               </div>
+              <span
+                style={{
+                  fontFamily: "var(--font-grotesk, sans-serif)",
+                  fontWeight: 700,
+                  fontSize: 22,
+                  textAlign: "center",
+                  marginBottom: 6,
+                }}
+              >
+                @{guardian.handle}
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "rgba(10,10,10,0.4)",
+                  marginBottom: 24,
+                }}
+              >
+                {fmt(guardian.followerCount)} followers
+              </span>
               <p
                 style={{
                   fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 13,
+                  fontSize: 11,
                   color: "rgba(10,10,10,0.5)",
                   lineHeight: 1.6,
                   margin: 0,
-                  marginTop: "auto",
+                  textAlign: "center",
+                  maxWidth: 200,
                 }}
               >
                 Your most famous recent supporter. Keeping you unwashed - or trying to.
@@ -308,13 +322,15 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
             <p
               style={{
                 fontFamily: "var(--font-mono, monospace)",
-                fontSize: 13,
+                fontSize: 11,
                 color: "rgba(10,10,10,0.38)",
                 lineHeight: 1.6,
                 margin: 0,
+                textAlign: "center",
+                maxWidth: 200,
               }}
             >
-              No guardian found. You&apos;re out here alone. Respect.
+              No guardian found. You&apos;re out here alone.
             </p>
           )}
         </div>
