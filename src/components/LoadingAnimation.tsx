@@ -32,7 +32,7 @@ export default function LoadingAnimation() {
           <span
             key={i}
             style={{
-              width: 8, height: 8, borderRadius: "50%", background: "#0A0A0A", display: "inline-block",
+              width: 8, height: 8, borderRadius: "50%", background: "#F5F4F0", display: "inline-block",
               animation: `dot-pulse 1.2s ease-in-out ${i * 0.2}s infinite`,
             }}
           />
@@ -41,7 +41,7 @@ export default function LoadingAnimation() {
       <p
         style={{
           fontFamily: "var(--font-mono, monospace)", fontSize: 12, textTransform: "uppercase",
-          letterSpacing: "0.12em", color: "#0A0A0A", opacity: visible ? 1 : 0,
+          letterSpacing: "0.12em", color: "#F5F4F0", opacity: visible ? 1 : 0,
           transition: "opacity 300ms ease-out", margin: 0, textAlign: "center",
         }}
       >
