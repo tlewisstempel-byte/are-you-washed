@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { startProfileRun } from "@/lib/apify";
+import { startProfileRun, startGuardianRun } from "@/lib/apify";
 
 export async function POST(req: NextRequest) {
   const { handle } = await req.json();
@@ -10,8 +10,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const cleanHandle = handle.replace(/^@/, "").trim();
-    const runId = await startProfileRun(cleanHandle);
-    return NextResponse.json({ runId, handle: cleanHandle });
+
+    const [profileRunId, guardianRunId] = await Promise.all([
+      startProfileRun(cleanHandle),
+      startGuardianRun(cleanHandle),
+    ]);
+
+    return NextResponse.json({ profileRunId, guardianRunId, handle: cleanHandle });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to start run";
     return NextResponse.json({ error: message }, { status: 500 });

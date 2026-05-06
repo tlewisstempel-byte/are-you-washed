@@ -24,7 +24,10 @@ function getStr(obj: ApifyItem, ...keys: string[]): string {
   return "";
 }
 
-/** Start an Apify run for a handle. Returns the runId immediately (< 1s). */
+/**
+ * Start the main profile run (fetches the user's own tweets).
+ * Returns the runId immediately (< 1s).
+ */
 export async function startProfileRun(handle: string): Promise<string> {
   const token = process.env.APIFY_API_TOKEN;
   if (!token) throw new Error("APIFY_API_TOKEN is not configured");
@@ -48,7 +51,40 @@ export async function startProfileRun(handle: string): Promise<string> {
   return data.data.id as string;
 }
 
-/** Check the status of a run. Returns the raw Apify status string. */
+/**
+ * Start the guardian run (searches for replies TO the handle).
+ * Returns the runId immediately (< 1s). Fails silently — returns null if the start fails.
+ */
+export async function startGuardianRun(handle: string): Promise<string | null> {
+  const token = process.env.APIFY_API_TOKEN;
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`${BASE}/acts/${ACTOR}/runs?token=${token}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        searchTerms: [`to:${handle}`],
+        maxItems: 20,
+        maxRequestRetries: 2,
+        proxyConfiguration: {
+          useApifyProxy: true,
+          apifyProxyGroups: ["DATACENTER"],
+        },
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.data.id as string;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check the status of any Apify run.
+ * Returns the raw status string e.g. "RUNNING", "SUCCEEDED", "FAILED".
+ */
 export async function getRunStatus(runId: string): Promise<string> {
   const token = process.env.APIFY_API_TOKEN;
   if (!token) throw new Error("APIFY_API_TOKEN is not configured");
@@ -59,16 +95,22 @@ export async function getRunStatus(runId: string): Promise<string> {
   return data.status as string;
 }
 
-/** Fetch items from a completed run and compute the ScoreResult. */
+/**
+ * Fetch items from a completed profile run and compute the ScoreResult.
+ * If a guardianRunId is provided and has SUCCEEDED, extracts the guardian too.
+ * If the guardian run hasn't finished or failed, returns guardian: null — score is unaffected.
+ */
 export async function buildScoreFromRun(
   handle: string,
-  runId: string
+  profileRunId: string,
+  guardianRunId: string | null
 ): Promise<ScoreResult> {
   const token = process.env.APIFY_API_TOKEN;
   if (!token) throw new Error("APIFY_API_TOKEN is not configured");
 
+  // ── Profile items ──────────────────────────────────────────────────────────────────────
   const res = await fetch(
-    `${BASE}/actor-runs/${runId}/dataset/items?token=${token}&limit=50`
+    `${BASE}/actor-runs/${profileRunId}/dataset/items?token=${token}&limit=50`
   );
   if (!res.ok) throw new Error(`Dataset fetch failed: ${res.status}`);
   const items: ApifyItem[] = await res.json();
@@ -76,7 +118,7 @@ export async function buildScoreFromRun(
   if (!items.length)
     throw new Error(`No data returned for @${handle} — check the handle and try again`);
 
-  console.log(`[apify] ${items.length} items for @${handle}`);
+  console.log(`[apify] profile: ${items.length} items for @${handle}`);
   console.log(`[apify] first item keys:`, Object.keys(items[0] ?? {}).join(", "));
   console.log(`[apify] first item (truncated):`, JSON.stringify(items[0]).slice(0, 600));
 
@@ -121,6 +163,55 @@ export async function buildScoreFromRun(
     tweets,
   };
 
-  const guardian: Guardian | null = null;
+  // ── Guardian ─────────────────────────────────────────────────────────────────────────────
+  let guardian: Guardian | null = null;
+
+  if (guardianRunId) {
+    try {
+      const guardianRes = await fetch(
+        `${BASE}/actor-runs/${guardianRunId}/dataset/items?token=${token}&limit=30`
+      );
+      if (guardianRes.ok) {
+        const replyItems: ApifyItem[] = await guardianRes.json();
+
+        if (replyItems.length > 0) {
+          console.log(`[apify] guardian: ${replyItems.length} reply items`);
+          console.log(`[apify] reply item keys:`, Object.keys(replyItems[0]).join(", "));
+          console.log(`[apify] reply item sample:`, JSON.stringify(replyItems[0]).slice(0, 400));
+        }
+
+        const candidates = new Map<string, Guardian>();
+        for (const item of replyItems) {
+          const authorObj2 = item?.author ?? item?.user ?? item?.userData ?? {};
+          const h =
+            getStr(authorObj2, "userName", "username", "screen_name") ||
+            getStr(item, "authorHandle", "authorUserName", "userName");
+          if (!h || h.toLowerCase() === handle.toLowerCase()) continue;
+          if (item.isRetweet || item.retweeted) continue;
+          if (!candidates.has(h.toLowerCase())) {
+            candidates.set(h.toLowerCase(), {
+              handle: h,
+              avatarUrl:
+                getStr(authorObj2, "profilePicture", "profile_image_url", "avatar") ||
+                getStr(item, "authorProfilePicture", "profilePicture"),
+              followerCount:
+                getNum(authorObj2, "followers", "followers_count", "followersCount") ||
+                getNum(item, "authorFollowers", "followersCount"),
+            });
+          }
+        }
+
+        if (candidates.size > 0) {
+          guardian = [...candidates.values()].sort(
+            (a, b) => b.followerCount - a.followerCount
+          )[0];
+          console.log(`[apify] guardian found: @${guardian.handle} (${guardian.followerCount} followers)`);
+        }
+      }
+    } catch {
+      guardian = null;
+    }
+  }
+
   return calculateScore(profile, guardian);
 }

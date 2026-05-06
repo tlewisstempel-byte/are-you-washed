@@ -19,19 +19,23 @@ export default function Home() {
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  const [runId, setRunId] = useState<string | null>(null);
+  const [profileRunId, setProfileRunId] = useState<string | null>(null);
+  const [guardianRunId, setGuardianRunId] = useState<string | null>(null);
   const [activeHandle, setActiveHandle] = useState<string>("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const router = useRouter();
 
   useEffect(() => {
-    if (!runId || !activeHandle) return;
+    if (!profileRunId || !activeHandle) return;
 
     pollRef.current = setInterval(async () => {
       try {
+        const guardianParam = guardianRunId
+          ? `&guardianRunId=${encodeURIComponent(guardianRunId)}`
+          : "";
         const res = await fetch(
-          `/api/score/poll?runId=${encodeURIComponent(runId)}&handle=${encodeURIComponent(activeHandle)}`
+          `/api/score/poll?profileRunId=${encodeURIComponent(profileRunId)}&handle=${encodeURIComponent(activeHandle)}${guardianParam}`
         );
         const data = await res.json();
 
@@ -49,21 +53,23 @@ export default function Home() {
         } else {
           setError(data.error ?? "Scoring failed");
           setPhase("error");
-          setRunId(null);
+          setProfileRunId(null);
+          setGuardianRunId(null);
         }
       } catch {
         if (pollRef.current) clearInterval(pollRef.current);
         pollRef.current = null;
         setError("Lost connection while scoring — please try again");
         setPhase("error");
-        setRunId(null);
+        setProfileRunId(null);
+        setGuardianRunId(null);
       }
     }, 3000);
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [runId, activeHandle, router]);
+  }, [profileRunId, guardianRunId, activeHandle, router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,7 +90,8 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error ?? "Failed to start scoring");
 
       setActiveHandle(h);
-      setRunId(data.runId);
+      setProfileRunId(data.profileRunId);
+      setGuardianRunId(data.guardianRunId ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setPhase("error");
