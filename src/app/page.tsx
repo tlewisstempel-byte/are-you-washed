@@ -16,7 +16,6 @@ export default function Home() {
   const [handle, setHandle] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState("");
-  const [scoreOverride, setScoreOverride] = useState("");
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const router = useRouter();
@@ -32,10 +31,7 @@ export default function Home() {
       const res = await fetch("/api/score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          handle: h,
-          scoreOverride: scoreOverride ? Number(scoreOverride) : undefined,
-        }),
+        body: JSON.stringify({ handle: h }),
       });
 
       const data = await res.json();
@@ -56,7 +52,7 @@ export default function Home() {
     <main
       style={{
         minHeight: "100vh",
-        background: OFF_WHITE,
+        background: CARBON,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -71,7 +67,7 @@ export default function Home() {
             fontWeight: 700,
             fontSize: "clamp(56px, 10vw, 108px)",
             letterSpacing: "-0.04em",
-            color: CARBON,
+            color: OFF_WHITE,
             lineHeight: 0.96,
             margin: 0,
           }}
@@ -85,11 +81,11 @@ export default function Home() {
             fontSize: 12,
             textTransform: "uppercase",
             letterSpacing: "0.12em",
-            color: "rgba(10,10,10,0.42)",
+            color: "rgba(245,244,240,0.38)",
             marginTop: 28,
           }}
         >
-          Enter an X handle. See if you're washed or not. 
+          Enter an X handle. See if you&apos;re washed or not.
         </p>
       </div>
 
@@ -105,8 +101,8 @@ export default function Home() {
           marginBottom: 76,
           transform: formInteractive ? "translateY(-2px) scale(1.012)" : "translateY(0) scale(1)",
           boxShadow: formInteractive
-            ? "0 14px 32px rgba(10,10,10,0.08)"
-            : "0 0 0 rgba(10,10,10,0)",
+            ? "0 14px 32px rgba(0,0,0,0.4)"
+            : "0 0 0 rgba(0,0,0,0)",
           transition:
             "transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1)",
         }}
@@ -120,7 +116,7 @@ export default function Home() {
               transform: "translateY(-50%)",
               fontFamily: GROTESK,
               fontSize: 18,
-              color: isFocused ? "rgba(10,10,10,0.5)" : "rgba(10,10,10,0.32)",
+              color: isFocused ? "rgba(245,244,240,0.5)" : "rgba(245,244,240,0.28)",
               pointerEvents: "none",
               userSelect: "none",
               transition: "color 180ms cubic-bezier(0.16, 1, 0.3, 1)",
@@ -142,14 +138,14 @@ export default function Home() {
               padding: "20px 18px 20px 36px",
               fontFamily: GROTESK,
               fontSize: 20,
-              color: CARBON,
-              background: "#FFFFFF",
+              color: OFF_WHITE,
+              background: "rgba(245,244,240,0.06)",
               border: `1px solid ${
                 isFocused
-                  ? "rgba(10,10,10,0.24)"
+                  ? "rgba(245,244,240,0.24)"
                   : formInteractive
-                    ? "rgba(10,10,10,0.18)"
-                    : "rgba(10,10,10,0.14)"
+                  ? "rgba(245,244,240,0.16)"
+                  : "rgba(245,244,240,0.10)"
               }`,
               borderRight: "none",
               outline: "none",
@@ -170,63 +166,18 @@ export default function Home() {
             fontSize: 11,
             textTransform: "uppercase",
             letterSpacing: "0.14em",
-            background: canSubmit ? (formInteractive ? "#1A1A1A" : CARBON) : "rgba(10,10,10,0.38)",
-            color: OFF_WHITE,
+            background: canSubmit ? OFF_WHITE : "rgba(245,244,240,0.18)",
+            color: canSubmit ? CARBON : "rgba(245,244,240,0.4)",
             flexShrink: 0,
             border: "none",
-            opacity: canSubmit ? 1 : 0.72,
             cursor: canSubmit ? "pointer" : "not-allowed",
             transition:
-              "background 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms cubic-bezier(0.16, 1, 0.3, 1)",
+              "background 180ms cubic-bezier(0.16, 1, 0.3, 1), color 180ms cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           {phase === "loading" ? "Scoring..." : "Score me"}
         </button>
       </form>
-
-      {/* Dev score override */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          marginTop: -24,
-          marginBottom: 48,
-          opacity: 0.45,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: MONO,
-            fontSize: 10,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            color: CARBON,
-          }}
-        >
-          Test score:
-        </span>
-
-        <input
-          type="number"
-          min="0"
-          max="100"
-          placeholder="0–100"
-          value={scoreOverride}
-          onChange={(e) => setScoreOverride(e.target.value)}
-          style={{
-            width: 84,
-            padding: "8px 10px",
-            fontFamily: MONO,
-            fontSize: 12,
-            color: CARBON,
-            background: "transparent",
-            border: `1px solid rgba(10,10,10,0.2)`,
-            outline: "none",
-            textAlign: "center",
-          }}
-        />
-      </div>
 
       {/* Loading */}
       {phase === "loading" && <LoadingAnimation />}
@@ -236,8 +187,8 @@ export default function Home() {
         <div
           style={{
             padding: "18px 24px",
-            border: "1px solid rgba(255,45,85,0.28)",
-            background: "rgba(255,45,85,0.05)",
+            border: "1px solid rgba(255,45,85,0.4)",
+            background: "rgba(255,45,85,0.08)",
             maxWidth: 560,
             width: "100%",
             textAlign: "center",
