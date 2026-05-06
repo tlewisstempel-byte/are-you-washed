@@ -18,11 +18,13 @@ export default function Home() {
   const [error, setError] = useState("");
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const [profileRunId, setProfileRunId] = useState<string | null>(null);
   const [guardianRunId, setGuardianRunId] = useState<string | null>(null);
   const [activeHandle, setActiveHandle] = useState<string>("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const router = useRouter();
 
@@ -45,12 +47,17 @@ export default function Home() {
         pollRef.current = null;
 
         if (data.status === "done") {
+          if (progressRef.current) clearInterval(progressRef.current);
+          progressRef.current = null;
           sessionStorage.setItem(
             `washed:${activeHandle.toLowerCase()}`,
             JSON.stringify(data.result as ScoreResult)
           );
           router.push(`/result/${activeHandle}`);
         } else {
+          if (progressRef.current) clearInterval(progressRef.current);
+          progressRef.current = null;
+          setProgress(0);
           setError(data.error ?? "Scoring failed");
           setPhase("error");
           setProfileRunId(null);
@@ -59,6 +66,9 @@ export default function Home() {
       } catch {
         if (pollRef.current) clearInterval(pollRef.current);
         pollRef.current = null;
+        if (progressRef.current) clearInterval(progressRef.current);
+        progressRef.current = null;
+        setProgress(0);
         setError("Lost connection while scoring — please try again");
         setPhase("error");
         setProfileRunId(null);
@@ -78,6 +88,16 @@ export default function Home() {
 
     setPhase("loading");
     setError("");
+    setProgress(0);
+    progressRef.current = setInterval(() => {
+      setProgress((p) => {
+        if (p >= 100) {
+          if (progressRef.current) clearInterval(progressRef.current);
+          return 100;
+        }
+        return p + 0.1;
+      });
+    }, 100);
 
     try {
       const res = await fetch("/api/score/start", {
@@ -95,6 +115,9 @@ export default function Home() {
       setProfileRunId(data.profileRunId);
       setGuardianRunId(data.guardianRunId ?? null);
     } catch (err) {
+      if (progressRef.current) clearInterval(progressRef.current);
+      progressRef.current = null;
+      setProgress(0);
       setError(err instanceof Error ? err.message : "Unknown error");
       setPhase("error");
     }
@@ -111,7 +134,8 @@ export default function Home() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "104px 24px 72px",
+        justifyContent: "center",
+        padding: "48px 24px",
       }}
     >
       {/* Header */}
@@ -237,6 +261,28 @@ export default function Home() {
       {/* Loading */}
       {phase === "loading" && <LoadingAnimation />}
 
+      {/* Progress bar */}
+      {phase === "loading" && (
+        <div style={{ width: "100%", maxWidth: 640, marginTop: 32 }}>
+          <div
+            style={{
+              width: "100%",
+              height: 2,
+              background: "rgba(245,244,240,0.10)",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${progress}%`,
+                background: OFF_WHITE,
+                transition: "width 100ms linear",
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Error */}
       {phase === "error" && (
         <div
@@ -262,7 +308,7 @@ export default function Home() {
             {error}
           </p>
           <button
-            onClick={() => setPhase("idle")}
+            onClick={() => { setPhase("idle"); setProgress(0); }}
             style={{
               marginTop: 12,
               fontFamily: MONO,
