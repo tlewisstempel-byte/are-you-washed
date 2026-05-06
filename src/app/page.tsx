@@ -86,7 +86,9 @@ export default function Home() {
         body: JSON.stringify({ handle: h }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      if (!text) throw new Error("No response from server");
+      const data = JSON.parse(text);
       if (!res.ok) throw new Error(data.error ?? "Failed to start scoring");
 
       setActiveHandle(h);
