@@ -87,14 +87,12 @@ function Illustration({ tier, tierName }: { tier: number; tierName: string }) {
     <img
       src={`/illustrations/tier${tier}.png`}
       alt={tierName}
-      width={320}
-      height={255}
       style={{
-        objectFit: "contain",
-        width: 320,
-        height: 255,
-        flexShrink: 0,
-        borderRadius: 8,
+        height: 320,
+        width: "auto",
+        position: "absolute",
+        bottom: 40,
+        right: 60,
         mixBlendMode: "multiply",
       }}
       onError={(e) => {
@@ -149,6 +147,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
             display: "flex",
             flexDirection: "column",
             gap: 24,
+            position: "relative",
           }}
         >
           {/* Profile */}
@@ -170,54 +169,51 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
             </div>
           </div>
 
-          {/* Score + illustration */}
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", flexDirection: "column" }}>
+          {/* Score */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: "rgba(10,10,10,0.20)",
+              }}
+            >
+              Washed Score
+            </span>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
               <span
                 style={{
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 11,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  color: "rgba(10,10,10,0.20)",
+                  fontWeight: 700,
+                  fontSize: 128,
+                  lineHeight: 1,
+                  color: accentColor,
+                  letterSpacing: "-0.02em",
                 }}
               >
-                Washed Score
+                {score}
               </span>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                <span
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 128,
-                    lineHeight: 1,
-                    color: accentColor,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {score}
-                </span>
-                <span
-                  style={{
-                    fontWeight: 400,
-                    fontSize: 28,
-                    lineHeight: 1,
-                    color: accentColor,
-                    opacity: 0.18,
-                    marginBottom: 16,
-                  }}
-                >
-                  /100
-                </span>
-              </div>
-              <span style={{ fontWeight: 500, fontSize: 42, lineHeight: 1.1, marginTop: 4 }}>
-                {tierName}
+              <span
+                style={{
+                  fontWeight: 400,
+                  fontSize: 28,
+                  lineHeight: 1,
+                  color: accentColor,
+                  opacity: 0.18,
+                  marginBottom: 16,
+                }}
+              >
+                /100
               </span>
             </div>
-
-            <div style={{ marginRight: 16, transform: "translateY(-36px)" }}>
-              <Illustration tier={tier} tierName={tierName} />
-            </div>
+            <span style={{ fontWeight: 500, fontSize: 42, lineHeight: 1.1, marginTop: 4 }}>
+              {tierName}
+            </span>
           </div>
+
+          {/* Illustration — absolutely positioned in left column */}
+          <Illustration tier={tier} tierName={tierName} />
 
           {/* Bars */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

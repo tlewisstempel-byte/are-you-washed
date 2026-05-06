@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 const PHRASES = [
   "Checking your last 10 posts...",
+  "This takes 1–2 minutes. It’s worth it.",
   "Calculating engagement rate...",
   "Measuring conviction ratio...",
   "Finding your guardian...",

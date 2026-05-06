@@ -24,6 +24,12 @@ function getStr(obj: ApifyItem, ...keys: string[]): string {
   return "";
 }
 
+// Upgrade Twitter avatar from _normal (48px) to _400x400
+function upgradeAvatarUrl(url: string): string {
+  if (!url) return url;
+  return url.replace(/_normal(\.\w+)$/, "_400x400$1");
+}
+
 /**
  * Start the main profile run (fetches the user's own tweets).
  * Returns the runId immediately (< 1s).
@@ -131,10 +137,11 @@ export async function buildScoreFromRun(
     getStr(first, "authorName", "displayName", "name") ||
     handle;
 
-  const avatarUrl =
+  const avatarUrl = upgradeAvatarUrl(
     getStr(authorObj, "profilePicture", "profile_image_url", "profile_image_url_https", "avatar") ||
     getStr(first, "authorProfilePicture", "profilePicture", "avatarUrl") ||
-    "";
+    ""
+  );
 
   const followerCount =
     getNum(authorObj, "followers", "followers_count", "followersCount") ||
@@ -191,9 +198,10 @@ export async function buildScoreFromRun(
           if (!candidates.has(h.toLowerCase())) {
             candidates.set(h.toLowerCase(), {
               handle: h,
-              avatarUrl:
+              avatarUrl: upgradeAvatarUrl(
                 getStr(authorObj2, "profilePicture", "profile_image_url", "avatar") ||
-                getStr(item, "authorProfilePicture", "profilePicture"),
+                getStr(item, "authorProfilePicture", "profilePicture")
+              ),
               followerCount:
                 getNum(authorObj2, "followers", "followers_count", "followersCount") ||
                 getNum(item, "authorFollowers", "followersCount"),
