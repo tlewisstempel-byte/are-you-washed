@@ -38,12 +38,12 @@ export interface ScoreResult {
 }
 
 function calcMotion(tweets: Tweet[], followerCount: number): number {
-  const totalWeighted = tweets.reduce(
-    (sum, t) => sum + t.bookmarkCount * 3 + t.replyCount * 2 + t.likeCount,
+  const avgEngagement = tweets.reduce(
+    (sum, t) => sum + t.likeCount + t.replyCount + t.bookmarkCount,
     0
-  );
-  const rawRate = totalWeighted / Math.max(followerCount, 1);
-  return Math.round(Math.min(rawRate / 0.2, 1) * 100);
+  ) / Math.max(tweets.length, 1);
+  const engagementRate = followerCount > 0 ? avgEngagement / followerCount : 0;
+  return Math.min(100, Math.round((engagementRate / 0.02) * 100));
 }
 
 function calcConviction(followerCount: number, followingCount: number): number {
@@ -82,7 +82,7 @@ export function calculateScore(
   const volume = calcVolume(profile.tweets);
   const score = Math.max(
     0,
-    Math.min(100, Math.round(motion * 0.4 + conviction * 0.4 + volume * 0.2))
+    Math.min(100, Math.round(motion * 0.30 + conviction * 0.50 + volume * 0.20))
   );
   const tier = getTierForScore(score);
   return {
