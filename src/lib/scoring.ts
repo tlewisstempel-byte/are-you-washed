@@ -47,8 +47,12 @@ function calcMotion(tweets: Tweet[], followerCount: number): number {
 }
 
 function calcConviction(followerCount: number, followingCount: number): number {
-  const ratio = followerCount / Math.max(followingCount, 1);
-  return Math.round(Math.min(ratio / 50, 1) * 100);
+  const ratio = followingCount > 0 ? followerCount / followingCount : followerCount > 0 ? 10 : 1;
+  const ratioScore = Math.min(100, (ratio / 5) * 100);
+  const scaleScore = followerCount > 0
+    ? Math.min(100, (Math.log10(followerCount) / 6) * 100)
+    : 0;
+  return Math.round(ratioScore * 0.5 + scaleScore * 0.5);
 }
 
 function calcVolume(tweets: Tweet[]): number {
@@ -62,9 +66,11 @@ function calcVolume(tweets: Tweet[]): number {
     86_400_000;
   if (days === 0) return 100;
   const tpw = tweets.length / (days / 7);
-  if (tpw < 1) return Math.round(tpw * 30);
-  if (tpw <= 10) return Math.round(30 + (tpw / 10) * 70);
-  return Math.max(Math.round(100 - (tpw - 10) * 5), 20);
+  let raw: number;
+  if (tpw < 1) raw = Math.round(tpw * 30);
+  else if (tpw <= 10) raw = Math.round(30 + (tpw / 10) * 70);
+  else raw = Math.max(Math.round(100 - (tpw - 10) * 5), 20);
+  return Math.max(35, raw);
 }
 
 export function calculateScore(
