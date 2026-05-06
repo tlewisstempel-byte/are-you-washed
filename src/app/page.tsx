@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import type { ScoreResult } from "@/lib/scoring";
@@ -18,27 +18,73 @@ export default function Home() {
   const [error, setError] = useState("");
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+
+  const [runId, setRunId] = useState<string | null>(null);
+  const [activeHandle, setActiveHandle] = useState<string>("");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const router = useRouter();
+
+  useEffect(() => {
+    if (!runId || !activeHandle) return;
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/score/poll?runId=${encodeURIComponent(runId)}&handle=${encodeURIComponent(activeHandle)}`
+        );
+        const data = await res.json();
+
+        if (data.status === "running") return;
+
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+
+        if (data.status === "done") {
+          sessionStorage.setItem(
+            `washed:${activeHandle.toLowerCase()}`,
+            JSON.stringify(data.result as ScoreResult)
+          );
+          router.push(`/result/${activeHandle}`);
+        } else {
+          setError(data.error ?? "Scoring failed");
+          setPhase("error");
+          setRunId(null);
+        }
+      } catch {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+        setError("Lost connection while scoring — please try again");
+        setPhase("error");
+        setRunId(null);
+      }
+    }, 3000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [runId, activeHandle, router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const h = handle.replace(/^@/, "").trim();
     if (!h) return;
+
     setPhase("loading");
     setError("");
 
     try {
-      const res = await fetch("/api/score", {
+      const res = await fetch("/api/score/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ handle: h }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Request failed");
+      if (!res.ok) throw new Error(data.error ?? "Failed to start scoring");
 
-      sessionStorage.setItem(`washed:${h.toLowerCase()}`, JSON.stringify(data as ScoreResult));
-      router.push(`/result/${h}`);
+      setActiveHandle(h);
+      setRunId(data.runId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setPhase("error");
@@ -206,6 +252,24 @@ export default function Home() {
           >
             {error}
           </p>
+          <button
+            onClick={() => setPhase("idle")}
+            style={{
+              marginTop: 12,
+              fontFamily: MONO,
+              fontSize: 10,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              color: "rgba(245,244,240,0.4)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+            }}
+          >
+            Try again
+          </button>
         </div>
       )}
     </main>
