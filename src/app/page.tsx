@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import type { ScoreResult } from "@/lib/scoring";
@@ -18,89 +18,17 @@ export default function Home() {
   const [error, setError] = useState("");
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [progress, setProgress] = useState(0);
-
-  const [profileRunId, setProfileRunId] = useState<string | null>(null);
-  const [guardianRunId, setGuardianRunId] = useState<string | null>(null);
-  const [activeHandle, setActiveHandle] = useState<string>("");
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const router = useRouter();
-
-  useEffect(() => {
-    if (!profileRunId || !activeHandle) return;
-
-    pollRef.current = setInterval(async () => {
-      try {
-        const guardianParam = guardianRunId
-          ? `&guardianRunId=${encodeURIComponent(guardianRunId)}`
-          : "";
-        const res = await fetch(
-          `/api/score/poll?profileRunId=${encodeURIComponent(profileRunId)}&handle=${encodeURIComponent(activeHandle)}${guardianParam}`
-        );
-        const data = await res.json();
-
-        if (data.status === "running") return;
-
-        if (pollRef.current) clearInterval(pollRef.current);
-        pollRef.current = null;
-
-        if (data.status === "done") {
-          if (progressRef.current) clearInterval(progressRef.current);
-          progressRef.current = null;
-          sessionStorage.setItem(
-            `washed:${activeHandle.toLowerCase()}`,
-            JSON.stringify(data.result as ScoreResult)
-          );
-          router.push(`/result/${activeHandle}`);
-        } else {
-          if (progressRef.current) clearInterval(progressRef.current);
-          progressRef.current = null;
-          setProgress(0);
-          setError(data.error ?? "Scoring failed");
-          setPhase("error");
-          setProfileRunId(null);
-          setGuardianRunId(null);
-        }
-      } catch {
-        if (pollRef.current) clearInterval(pollRef.current);
-        pollRef.current = null;
-        if (progressRef.current) clearInterval(progressRef.current);
-        progressRef.current = null;
-        setProgress(0);
-        setError("Lost connection while scoring — please try again");
-        setPhase("error");
-        setProfileRunId(null);
-        setGuardianRunId(null);
-      }
-    }, 3000);
-
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [profileRunId, guardianRunId, activeHandle, router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const h = handle.replace(/^@/, "").trim();
     if (!h) return;
-
     setPhase("loading");
     setError("");
-    setProgress(0);
-    progressRef.current = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          if (progressRef.current) clearInterval(progressRef.current);
-          return 100;
-        }
-        return p + 0.1;
-      });
-    }, 100);
 
     try {
-      const res = await fetch("/api/score/start", {
+      const res = await fetch("/api/score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ handle: h }),
@@ -109,15 +37,11 @@ export default function Home() {
       const text = await res.text();
       if (!text) throw new Error("No response from server");
       const data = JSON.parse(text);
-      if (!res.ok) throw new Error(data.error ?? "Failed to start scoring");
+      if (!res.ok) throw new Error(data.error ?? "Request failed");
 
-      setActiveHandle(h);
-      setProfileRunId(data.profileRunId);
-      setGuardianRunId(data.guardianRunId ?? null);
+      sessionStorage.setItem(`washed:${h.toLowerCase()}`, JSON.stringify(data as ScoreResult));
+      router.push(`/result/${h}`);
     } catch (err) {
-      if (progressRef.current) clearInterval(progressRef.current);
-      progressRef.current = null;
-      setProgress(0);
       setError(err instanceof Error ? err.message : "Unknown error");
       setPhase("error");
     }
@@ -168,7 +92,7 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Input */}
+      {/* Input form */}
       <form
         onSubmit={submit}
         onMouseEnter={() => setIsHovered(true)}
@@ -177,7 +101,7 @@ export default function Home() {
           display: "flex",
           width: "100%",
           maxWidth: 640,
-          marginBottom: 76,
+          marginBottom: 40,
           transform: formInteractive ? "translateY(-2px) scale(1.012)" : "translateY(0) scale(1)",
           boxShadow: formInteractive
             ? "0 14px 32px rgba(0,0,0,0.4)"
@@ -261,28 +185,6 @@ export default function Home() {
       {/* Loading */}
       {phase === "loading" && <LoadingAnimation />}
 
-      {/* Progress bar */}
-      {phase === "loading" && (
-        <div style={{ width: "100%", maxWidth: 640, marginTop: 32 }}>
-          <div
-            style={{
-              width: "100%",
-              height: 2,
-              background: "rgba(245,244,240,0.10)",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${progress}%`,
-                background: OFF_WHITE,
-                transition: "width 100ms linear",
-              }}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Error */}
       {phase === "error" && (
         <div
@@ -308,7 +210,7 @@ export default function Home() {
             {error}
           </p>
           <button
-            onClick={() => { setPhase("idle"); setProgress(0); }}
+            onClick={() => setPhase("idle")}
             style={{
               marginTop: 12,
               fontFamily: MONO,
