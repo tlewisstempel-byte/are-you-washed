@@ -3,7 +3,7 @@ import { getTierForScore } from "./tiers";
 export interface Tweet {
   likeCount: number;
   replyCount: number;
-  bookmarkCount: number;
+  retweetCount: number;
   createdAt: string;
 }
 
@@ -37,13 +37,15 @@ export interface ScoreResult {
   guardian: Guardian | null;
 }
 
+const ENGAGEMENT_BENCHMARK = 0.02; // 2% engagement rate = motion score of 100
+
 function calcMotion(tweets: Tweet[], followerCount: number): number {
   const avgEngagement = tweets.reduce(
-    (sum, t) => sum + t.likeCount + t.replyCount + t.bookmarkCount,
+    (sum, t) => sum + t.likeCount + t.replyCount + t.retweetCount,
     0
   ) / Math.max(tweets.length, 1);
   const engagementRate = followerCount > 0 ? avgEngagement / followerCount : 0;
-  return Math.min(100, Math.round((engagementRate / 0.02) * 100));
+  return Math.min(100, Math.round((engagementRate / ENGAGEMENT_BENCHMARK) * 100));
 }
 
 function calcConviction(followerCount: number, followingCount: number): number {
