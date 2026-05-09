@@ -318,7 +318,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
           {guardian ? (
             <>
               <div style={{ marginBottom: 24 }}>
-                <Avatar src={guardian.avatarUrl} name={guardian.handle} size={180} color="rgba(10,10,10,0.1)" />
+                <Avatar src={guardian.avatarUrl} name={guardian.handle} size={100} color="rgba(10,10,10,0.1)" />
               </div>
               <span
                 style={{
