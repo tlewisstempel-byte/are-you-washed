@@ -9,7 +9,7 @@ const MONO = "var(--font-mono, monospace)";
 const TIER_TAGLINES: Record<number, string> = {
   1: "YOU'RE SO UNWASHED YOU'RE ROAMING FREE",
   2: "YOU'RE NOT WASHED - WELL DONE",
-  3: "YOU'RE A LITTLE BIT WASHED",
+  3: "YOU'RE A LITTLE BIT WASHED - BUT YOU CAN MAKE IT BACK",
   4: "YOU ARE COMPLETELY WASHED",
 };
 
@@ -262,7 +262,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
             style={{
               fontFamily: GROTESK,
               fontWeight: 400,
-              fontSize: 18,
+              fontSize: 14,
               textTransform: "uppercase",
               letterSpacing: "0.04em",
               color: accentColor,
