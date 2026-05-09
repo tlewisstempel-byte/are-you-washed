@@ -257,10 +257,11 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
           {/* Tier tagline */}
           <p
             style={{
-              fontFamily: MONO,
-              fontSize: 11,
+              fontFamily: GROTESK,
+              fontWeight: 700,
+              fontSize: 18,
               textTransform: "uppercase",
-              letterSpacing: "0.12em",
+              letterSpacing: "0.04em",
               color: "#0A0A0A",
               margin: 0,
               position: "absolute",
