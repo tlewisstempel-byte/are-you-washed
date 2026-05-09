@@ -3,6 +3,13 @@
 import { forwardRef } from "react";
 import type { ScoreResult } from "@/lib/scoring";
 
+const TIER_TAGLINES: Record<number, string> = {
+  1: "YOU'RE SO UNWASHED YOU'RE ROAMING FREE",
+  2: "YOU'RE NOT WASHED - WELL DONE",
+  3: "YOU'RE A LITTLE BIT WASHED",
+  4: "YOU ARE COMPLETELY WASHED",
+};
+
 function fmt(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -20,7 +27,7 @@ function Bar({ label, value, color }: { label: string; value: number; color: str
           fontSize: 11,
           textTransform: "uppercase",
           letterSpacing: "0.1em",
-          color: "rgba(10,10,10,0.4)",
+          color: "#0A0A0A",
         }}
       >
         <span>{label}</span>
@@ -186,7 +193,8 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
                 fontSize: 11,
                 textTransform: "uppercase",
                 letterSpacing: "0.12em",
-                color: "rgba(10,10,10,0.20)",
+                color: "#0A0A0A",
+                fontWeight: 700,
               }}
             >
               Washed Score
@@ -231,20 +239,22 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
             <Bar label="Consistency" value={volume} color={accentColor} />
           </div>
 
-          {/* Footer */}
-          <div style={{ marginTop: "auto" }}>
-            <span
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 11,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                color: "rgba(10,10,10,0.10)",
-              }}
-            >
-              areyouwashed.xyz
-            </span>
-          </div>
+          {/* Tier tagline */}
+          <p
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              color: "#0A0A0A",
+              margin: 0,
+              position: "absolute",
+              bottom: 28,
+              left: 40,
+            }}
+          >
+            {TIER_TAGLINES[tier] ?? ""}
+          </p>
         </div>
 
         {/* Divider */}
