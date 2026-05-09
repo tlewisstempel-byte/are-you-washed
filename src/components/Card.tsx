@@ -99,7 +99,7 @@ function Illustration({ tier, tierName }: { tier: number; tierName: string }) {
         width: "auto",
         position: "absolute",
         top: 120,
-        right: 60,
+        right: 85,
         mixBlendMode: "multiply",
       }}
       onError={(e) => {
