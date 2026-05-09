@@ -279,7 +279,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               fontSize: 11,
               textTransform: "uppercase",
               letterSpacing: "0.12em",
-              color: "rgba(10,10,10,0.35)",
+              color: "#0A0A0A",
               marginBottom: 24,
             }}
           >
