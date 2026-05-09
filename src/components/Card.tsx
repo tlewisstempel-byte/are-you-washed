@@ -102,7 +102,7 @@ function Illustration({ tier, tierName }: { tier: number; tierName: string }) {
         height: 300,
         width: "auto",
         position: "absolute",
-        top: 40,
+        top: 140,
         right: 40,
         mixBlendMode: "multiply",
         pointerEvents: "none",
