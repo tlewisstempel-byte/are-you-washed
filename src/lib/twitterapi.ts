@@ -120,23 +120,34 @@ export async function scrapeProfile(
     tweets,
   };
 
-  // ── 4. Guardian: fetch recent mentions ───────────────────────────────────
+  // ── 4. Guardian: fetch replies to first 5 tweets, find highest-follower author ──
   let guardian: Guardian | null = null;
   try {
-    const mentionsRes = await apiFetch(
-      `/twitter/user/mentions?userName=${encodeURIComponent(handle)}&count=20`,
-      token
+    const tweetIds = rawTweets
+      .slice(0, 5)
+      .map((t) => t.id ?? t.tweetId ?? t.id_str)
+      .filter(Boolean);
+
+    const replyResults = await Promise.allSettled(
+      tweetIds.map((id) =>
+        apiFetch(`/twitter/tweet/replies?tweetId=${id}&count=20`, token)
+      )
     );
 
-    const rawMentions = extractTweetArray(mentionsRes);
+    const allReplies: ApiResponse[] = [];
+    for (const result of replyResults) {
+      if (result.status === "fulfilled") {
+        allReplies.push(...extractTweetArray(result.value));
+      }
+    }
 
-    if (rawMentions.length > 0) {
-      console.log(`[twitterapi] mention[0] keys:`, Object.keys(rawMentions[0]).join(", "));
-      console.log(`[twitterapi] mention[0] sample:`, JSON.stringify(rawMentions[0]).slice(0, 400));
+    if (allReplies.length > 0) {
+      console.log(`[twitterapi] reply[0] keys:`, Object.keys(allReplies[0]).join(", "));
+      console.log(`[twitterapi] reply[0] sample:`, JSON.stringify(allReplies[0]).slice(0, 400));
     }
 
     const candidates = new Map<string, Guardian>();
-    for (const item of rawMentions) {
+    for (const item of allReplies) {
       const authorObj = item?.author ?? item?.user ?? item?.userData ?? {};
       const h =
         getStr(authorObj, "userName", "username", "screen_name") ||
