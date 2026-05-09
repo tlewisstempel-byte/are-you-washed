@@ -82,10 +82,11 @@ export function calculateScore(
   const motion = calcMotion(profile.tweets, profile.followerCount);
   const conviction = calcConviction(profile.followerCount, profile.followingCount);
   const volume = calcVolume(profile.tweets);
-  const score = Math.max(
+  const raw = Math.max(
     0,
     Math.min(100, Math.round(motion * 0.30 + conviction * 0.50 + volume * 0.20))
   );
+  const score = motion < 15 ? Math.round(raw * 0.55) : raw;
   const tier = getTierForScore(score);
   return {
     handle: profile.handle,
