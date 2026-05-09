@@ -40,6 +40,19 @@ async function apiFetch(path: string, token: string): Promise<ApiResponse> {
   return res.json();
 }
 
+function extractTweetArray(res: ApiResponse): ApiResponse[] {
+  if (Array.isArray(res)) return res;
+  // { data: { tweets: [...] } } — last_tweets shape
+  if (Array.isArray(res?.data?.tweets)) return res.data.tweets;
+  // { data: [...] }
+  if (Array.isArray(res?.data)) return res.data;
+  // { tweets: [...] }
+  if (Array.isArray(res?.tweets)) return res.tweets;
+  // { results: [...] }
+  if (Array.isArray(res?.results)) return res.results;
+  return [];
+}
+
 export async function scrapeProfile(
   handle: string
 ): Promise<{ profile: UserProfile; guardian: Guardian | null }> {
@@ -77,15 +90,7 @@ export async function scrapeProfile(
     getNum(userRes, "following", "followingCount");
 
   // ── 3. Extract tweets ────────────────────────────────────────────────────
-  const rawTweets: ApiResponse[] = Array.isArray(tweetsRes)
-    ? tweetsRes
-    : Array.isArray(tweetsRes?.data)
-    ? tweetsRes.data
-    : Array.isArray(tweetsRes?.tweets)
-    ? tweetsRes.tweets
-    : Array.isArray(tweetsRes?.results)
-    ? tweetsRes.results
-    : [];
+  const rawTweets = extractTweetArray(tweetsRes);
 
   console.log(`[twitterapi] tweets count:`, rawTweets.length);
   if (rawTweets.length > 0) {
@@ -94,6 +99,7 @@ export async function scrapeProfile(
   }
 
   const tweets: Tweet[] = rawTweets.slice(0, 10).map((item) => {
+    // twitterapi.io returns counts directly on the tweet, not nested in public_metrics
     const metrics = item?.public_metrics ?? item;
     return {
       likeCount: getNum(metrics, "likeCount", "like_count", "favorite_count",
@@ -122,15 +128,7 @@ export async function scrapeProfile(
       token
     );
 
-    const rawMentions: ApiResponse[] = Array.isArray(mentionsRes)
-      ? mentionsRes
-      : Array.isArray(mentionsRes?.data)
-      ? mentionsRes.data
-      : Array.isArray(mentionsRes?.tweets)
-      ? mentionsRes.tweets
-      : Array.isArray(mentionsRes?.results)
-      ? mentionsRes.results
-      : [];
+    const rawMentions = extractTweetArray(mentionsRes);
 
     if (rawMentions.length > 0) {
       console.log(`[twitterapi] mention[0] keys:`, Object.keys(rawMentions[0]).join(", "));
