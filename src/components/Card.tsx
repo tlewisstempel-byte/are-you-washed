@@ -233,9 +233,12 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
             </div>
             <span
               style={{
-                fontWeight: 500,
-                fontSize: 42,
+                fontFamily: GROTESK,
+                fontWeight: 600,
+                fontSize: 20,
                 lineHeight: 1.1,
+                letterSpacing: "-0.01em",
+                color: "#0A0A0A",
                 marginTop: 8,
                 marginBottom: 24,
               }}
@@ -258,7 +261,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
           <p
             style={{
               fontFamily: GROTESK,
-              fontWeight: 700,
+              fontWeight: 400,
               fontSize: 18,
               textTransform: "uppercase",
               letterSpacing: "0.04em",
@@ -266,7 +269,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               margin: 0,
               position: "absolute",
               bottom: 36,
-              left: 40,
+              left: 56,
             }}
           >
             {TIER_TAGLINES[tier] ?? ""}
