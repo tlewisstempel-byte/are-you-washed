@@ -3,6 +3,9 @@
 import { forwardRef } from "react";
 import type { ScoreResult } from "@/lib/scoring";
 
+const GROTESK = "var(--font-grotesk, sans-serif)";
+const MONO = "var(--font-mono, monospace)";
+
 const TIER_TAGLINES: Record<number, string> = {
   1: "YOU'RE SO UNWASHED YOU'RE ROAMING FREE",
   2: "YOU'RE NOT WASHED - WELL DONE",
@@ -23,11 +26,12 @@ function Bar({ label, value, color }: { label: string; value: number; color: str
         style={{
           display: "flex",
           justifyContent: "space-between",
-          fontFamily: "var(--font-mono, monospace)",
+          fontFamily: MONO,
           fontSize: 11,
           textTransform: "uppercase",
           letterSpacing: "0.1em",
           color: "#0A0A0A",
+          fontWeight: 600,
         }}
       >
         <span>{label}</span>
@@ -77,7 +81,7 @@ function Avatar({ src, name, size, color }: { src: string; name: string; size: n
         alignItems: "center",
         justifyContent: "center",
         color: "#fff",
-        fontFamily: "var(--font-grotesk, sans-serif)",
+        fontFamily: GROTESK,
         fontWeight: 700,
         fontSize: size * 0.35,
         flexShrink: 0,
@@ -95,12 +99,13 @@ function Illustration({ tier, tierName }: { tier: number; tierName: string }) {
       src={`/illustrations/tier${tier}.png`}
       alt={tierName}
       style={{
-        height: 320,
+        height: 300,
         width: "auto",
         position: "absolute",
-        top: 120,
-        right: 85,
+        top: 40,
+        right: 40,
         mixBlendMode: "multiply",
+        pointerEvents: "none",
       }}
       onError={(e) => {
         const img = e.currentTarget;
@@ -137,7 +142,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
         background: "#F5F4F0",
         display: "flex",
         flexDirection: "column",
-        fontFamily: "var(--font-grotesk, sans-serif)",
+        fontFamily: GROTESK,
         overflow: "hidden",
         borderRadius: 10,
       }}
@@ -173,11 +178,11 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               </span>
               <span
                 style={{
-                  fontFamily: "var(--font-mono, monospace)",
+                  fontFamily: MONO,
                   fontSize: 11,
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
-                  color: "rgba(10,10,10,0.4)",
+                  color: "rgba(10,10,10,0.55)",
                 }}
               >
                 {fmt(followerCount)} followers
@@ -189,7 +194,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span
               style={{
-                fontFamily: "var(--font-mono, monospace)",
+                fontFamily: MONO,
                 fontSize: 11,
                 textTransform: "uppercase",
                 letterSpacing: "0.12em",
@@ -199,7 +204,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
             >
               Washed Score
             </span>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 4 }}>
               <span
                 style={{
                   fontWeight: 700,
@@ -213,27 +218,37 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               </span>
               <span
                 style={{
-                  fontWeight: 400,
+                  fontFamily: GROTESK,
                   fontSize: 28,
-                  lineHeight: 1,
-                  color: accentColor,
-                  opacity: 0.18,
-                  marginBottom: 16,
+                  fontWeight: 400,
+                  color: "#0A0A0A",
+                  opacity: 0.4,
+                  marginLeft: 4,
+                  alignSelf: "flex-end",
+                  paddingBottom: 8,
                 }}
               >
                 /100
               </span>
             </div>
-            <span style={{ fontWeight: 500, fontSize: 42, lineHeight: 1.1, marginTop: 4 }}>
+            <span
+              style={{
+                fontWeight: 500,
+                fontSize: 42,
+                lineHeight: 1.1,
+                marginTop: 8,
+                marginBottom: 24,
+              }}
+            >
               {tierName}
             </span>
           </div>
 
-          {/* Illustration — absolutely positioned, upper-right of left column */}
+          {/* Illustration — absolutely positioned, top-right of left column */}
           <Illustration tier={tier} tierName={tierName} />
 
           {/* Bars */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: -16 }}>
             <Bar label="Engagement" value={motion} color={accentColor} />
             <Bar label="Credibility" value={conviction} color={accentColor} />
             <Bar label="Consistency" value={volume} color={accentColor} />
@@ -242,14 +257,14 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
           {/* Tier tagline */}
           <p
             style={{
-              fontFamily: "var(--font-mono, monospace)",
+              fontFamily: MONO,
               fontSize: 11,
               textTransform: "uppercase",
               letterSpacing: "0.12em",
               color: "#0A0A0A",
               margin: 0,
               position: "absolute",
-              bottom: 28,
+              bottom: 36,
               left: 40,
             }}
           >
@@ -258,24 +273,34 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
         </div>
 
         {/* Divider */}
-        <div style={{ width: 1, background: "rgba(10,10,10,0.1)", flexShrink: 0 }} />
+        <div
+          style={{
+            width: 1,
+            background: "rgba(10,10,10,0.08)",
+            alignSelf: "stretch",
+            flexShrink: 0,
+          }}
+        />
 
         {/* ── Guardian column ── */}
         <div
           style={{
             width: 370,
             background: "#E8E2D9",
-            padding: "44px 40px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            height: "100%",
+            padding: "40px 32px",
+            gap: 0,
             flexShrink: 0,
+            boxSizing: "border-box",
           }}
         >
           <span
             style={{
-              fontFamily: "var(--font-mono, monospace)",
+              fontFamily: MONO,
               fontSize: 11,
               textTransform: "uppercase",
               letterSpacing: "0.12em",
@@ -293,7 +318,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               </div>
               <span
                 style={{
-                  fontFamily: "var(--font-grotesk, sans-serif)",
+                  fontFamily: GROTESK,
                   fontWeight: 700,
                   fontSize: 22,
                   textAlign: "center",
@@ -304,24 +329,24 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               </span>
               <span
                 style={{
-                  fontFamily: "var(--font-mono, monospace)",
+                  fontFamily: MONO,
                   fontSize: 11,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
-                  color: "rgba(10,10,10,0.4)",
-                  marginBottom: 24,
+                  color: "rgba(10,10,10,0.55)",
+                  marginBottom: 20,
                 }}
               >
                 {fmt(guardian.followerCount)} followers
               </span>
               <p
                 style={{
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 11,
-                  color: "rgba(10,10,10,0.5)",
-                  lineHeight: 1.6,
-                  margin: 0,
+                  fontFamily: MONO,
+                  fontSize: 12,
+                  lineHeight: 1.7,
                   textAlign: "center",
+                  color: "rgba(10,10,10,0.5)",
+                  margin: 0,
                   maxWidth: 200,
                 }}
               >
@@ -331,7 +356,7 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
           ) : (
             <p
               style={{
-                fontFamily: "var(--font-mono, monospace)",
+                fontFamily: MONO,
                 fontSize: 11,
                 color: "rgba(10,10,10,0.38)",
                 lineHeight: 1.6,
