@@ -302,11 +302,11 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
           <span
             style={{
               fontFamily: MONO,
-              fontSize: 11,
+              fontSize: 13,
               textTransform: "uppercase",
-              letterSpacing: "0.12em",
+              letterSpacing: "0.08em",
               color: "#0A0A0A",
-              marginBottom: 24,
+              marginBottom: 28,
             }}
           >
             Your Guardian
@@ -314,16 +314,16 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
 
           {guardian ? (
             <>
-              <div style={{ marginBottom: 20 }}>
-                <Avatar src={guardian.avatarUrl} name={guardian.handle} size={140} color="#0A0A0A" />
+              <div style={{ marginBottom: 24 }}>
+                <Avatar src={guardian.avatarUrl} name={guardian.handle} size={180} color="rgba(10,10,10,0.1)" />
               </div>
               <span
                 style={{
                   fontFamily: GROTESK,
                   fontWeight: 700,
-                  fontSize: 22,
+                  fontSize: 28,
                   textAlign: "center",
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}
               >
                 @{guardian.handle}
@@ -331,11 +331,11 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               <span
                 style={{
                   fontFamily: MONO,
-                  fontSize: 11,
+                  fontSize: 13,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                   color: "rgba(10,10,10,0.55)",
-                  marginBottom: 20,
+                  marginBottom: 28,
                 }}
               >
                 {fmt(guardian.followerCount)} followers
@@ -343,12 +343,12 @@ const Card = forwardRef<HTMLDivElement, { data: ScoreResult }>(function Card({ d
               <p
                 style={{
                   fontFamily: MONO,
-                  fontSize: 12,
+                  fontSize: 14,
                   lineHeight: 1.7,
                   textAlign: "center",
                   color: "rgba(10,10,10,0.5)",
                   margin: 0,
-                  maxWidth: 200,
+                  maxWidth: 220,
                 }}
               >
                 Your most famous recent supporter. Keeping you unwashed - or trying to.
